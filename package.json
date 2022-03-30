@@ -1,11 +1,14 @@
 {
-  "name": "@lit/lit-starter-js",
-  "private": true,
-  "version": "1.0.2",
-  "description": "A simple web component",
+  "name": "@olange/h3-worldmap",
+  "version": "0.1.0",
+  "description": "An H3 worldmap web component",
   "main": "my-element.js",
   "module": "my-element.js",
   "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "echo \"This is not a TypeScript project, so no need to build.\"",
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
@@ -34,9 +37,14 @@
     "web-components",
     "lit-element",
     "javascript",
-    "lit"
+    "lit",
+    "h3",
+    "worldmap"
   ],
-  "author": "Google LLC",
+  "author": "Olivier Lange (https://github.com/olange)",
+  "contributors": [
+    "Rudi Farkas (https://github.com/rudifa)"
+  ],
   "license": "BSD-3-Clause",
   "dependencies": {
     "lit": "^2.1.0"

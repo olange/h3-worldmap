@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2019 Google LLC
+ * Copyright 2022 Olivier Lange & Rudi Farkas
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
