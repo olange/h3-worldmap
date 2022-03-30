@@ -10,9 +10,9 @@ import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 
 export default {
-  input: 'my-element.js',
+  input: 'h3-worldmap.js',
   output: {
-    file: 'my-element.bundled.js',
+    file: 'h3-worldmap.bundled.js',
     format: 'esm',
   },
   onwarn(warning) {
