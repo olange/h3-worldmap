@@ -43,8 +43,9 @@
       </tr>
       
         <tr>
-          <td>projection</td><td>Geodesic projection identifier (a string matching one of the D3-geo
-projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</td><td></td>
+          <td>projection</td><td>Geodesic projection identifier (a string matching one of
+the selected D3-geo projections that we support — see
+the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td></td>
         </tr>
       
         <tr>
@@ -53,6 +54,24 @@ projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</t
 For instance:
     <code>&lt;h3-worldmap
        areas='[ 80abfffffffffff, 80a5fffffffffff ]'></code></td><td>array</td><td></td>
+        </tr>
+      
+        <tr>
+          <td>_aspectRatio</td><td>Computed aspect ratio (width / height) of the client
+rect of the map SVG Element.
+
+Defined after first update and paint, thru a complicated
+execution flow:
+
+1. the `updated()` lifecyle event handler (called whenever
+   the component’s update finishes and the element's DOM has
+   been updated and rendered) registers a `requestAnimationFrame()`
+   callback handler;
+2. that will in turn measure the width and height of the
+   SVG element, compute its aspect ratio and set this state
+   property accordingly;
+3. which will finally trigger a re-render of the SVG element
+   by Lit, with the correct aspect ratio being available.</td><td></td><td></td>
         </tr>
       
     </table>
@@ -73,24 +92,39 @@ For instance:
         </tr>
       
         <tr>
-          <td>projection</td><td>projection</td><td>Geodesic projection identifier (a string matching one of the D3-geo
-projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</td><td>"orthographic"</td>
+          <td>projection</td><td>projection</td><td>Geodesic projection identifier (a string matching one of
+the selected D3-geo projections that we support — see
+the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td>"orthographic"</td>
         </tr>
       
         <tr>
-          <td>_width</td><td></td><td></td><td>number</td><td>960</td>
+          <td>_SVGElement</td><td></td><td></td><td></td><td></td>
         </tr>
       
         <tr>
-          <td>_height</td><td></td><td></td><td>number</td><td>480</td>
+          <td>_aspectRatio</td><td>_aspectRatio</td><td>Computed aspect ratio (width / height) of the client
+rect of the map SVG Element.
+
+Defined after first update and paint, thru a complicated
+execution flow:
+
+1. the `updated()` lifecyle event handler (called whenever
+   the component’s update finishes and the element's DOM has
+   been updated and rendered) registers a `requestAnimationFrame()`
+   callback handler;
+2. that will in turn measure the width and height of the
+   SVG element, compute its aspect ratio and set this state
+   property accordingly;
+3. which will finally trigger a re-render of the SVG element
+   by Lit, with the correct aspect ratio being available.</td><td>null</td><td>null</td>
         </tr>
       
         <tr>
-          <td>_uniqueAreas</td><td></td><td></td><td></td><td>undefined</td>
+          <td>_uniqueAreas</td><td></td><td></td><td>null</td><td>null</td>
         </tr>
       
         <tr>
-          <td>_projectionDef</td><td></td><td></td><td></td><td>undefined</td>
+          <td>_projectionDef</td><td></td><td></td><td>null</td><td>null</td>
         </tr>
       
     </table>
@@ -103,7 +137,7 @@ projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</t
       </tr>
       
         <tr>
-          <td>infoBox</td><td>
+          <td>infoBoxFrag</td><td>
     
     <table>
       <tr>
@@ -123,23 +157,7 @@ projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</t
         </tr>
       
         <tr>
-          <td>projectionRepr</td><td>
-    
-    <table>
-      <tr>
-        <th>Name</th><th>Description</th><th>Type</th>
-      </tr>
-      
-        <tr>
-          <td>projDef</td><td></td><td></td>
-        </tr>
-      
-    </table>
-  </td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>areasRepr</td><td>
+          <td>areasFrag</td><td>
     
     <table>
       <tr>
@@ -155,7 +173,7 @@ projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</t
         </tr>
       
         <tr>
-          <td>worldMap</td><td>
+          <td>projectionFrag</td><td>
     
     <table>
       <tr>
@@ -163,11 +181,23 @@ projections that we support — see AVAILABLE_PROJECTIONS map)</td><td>string</t
       </tr>
       
         <tr>
-          <td>width</td><td></td><td></td>
+          <td>projDef</td><td></td><td></td>
+        </tr>
+      
+    </table>
+  </td><td></td><td></td>
         </tr>
       
         <tr>
-          <td>height</td><td></td><td></td>
+          <td>worldMapFrag</td><td>
+    
+    <table>
+      <tr>
+        <th>Name</th><th>Description</th><th>Type</th>
+      </tr>
+      
+        <tr>
+          <td>aspectRatio</td><td></td><td></td>
         </tr>
       
     </table>
