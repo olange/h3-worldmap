@@ -18,6 +18,7 @@ function removeDuplicates( arr) {
 
 const hostStyles = css`
   :host {
+    height: 66vh;
     display: inline-block;
     --primary-color: black;
     --secondary-color: #dddddd;
@@ -28,8 +29,10 @@ const hostStyles = css`
     --background-color: white;
   }`;
 
+// SVG element will use all available space, but no more
+// (actual size constraints should be set on host)
 const mapStyles = css`
-  svg#map { width: 100%; height: 66vh; }
+  svg#map { width: 100%; height: 100%; }
   .outline { fill: none; stroke: var(--secondary-color); }
   .sphere { fill: var(--background-color); stroke: none; }
   .land { fill: var(--primary-color); stroke: none; }
