@@ -9,10 +9,136 @@ import * as d3 from 'd3';
 import { h3IsValid } from 'h3-js';
 
 // Utility functions
-// TODO: move to separate module
 
 function removeDuplicates( arr) {
   return [...new Set(arr)];
+}
+
+// Styles
+
+const hostStyles = css`
+  :host {
+    display: inline-block;
+    --primary-color: black;
+    --secondary-color: #dddddd;
+    --tertiary-color: #cccccc;
+    --highlight-color: #990000;
+    --areas-color: #cc0000cc;
+    --bounding-box-color: #ddddddcc;
+    --background-color: white;
+  }`;
+
+const mapStyles = css`
+  svg#map { width: 100%; height: 66vh; }
+  .outline { fill: none; stroke: var(--secondary-color); }
+  .sphere { fill: var(--background-color); stroke: none; }
+  .land { fill: var(--primary-color); stroke: none; }
+  .graticule { fill: none; stroke: var(--secondary-color); }
+  .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
+  .areas { fill: var(--areas-color); stroke: var(--highlight-color); }
+  .bbox { fill: none; stroke: var(--highlight-color); }`;
+
+const infoStyles = css`
+  div.info {
+    color: var(--primary-color);
+    border: 3px solid var(--primary-color); border-radius: 1.5rem;
+    padding: 1rem 1.5rem;
+  }
+  div.info code {
+    font-size: 1.3rem;
+  }`;
+
+const spinnerStyles = css`
+  g.spinner {
+    animation: rotate 2s linear infinite;
+  }
+
+  g.spinner > circle {
+    animation: dash 1.5s ease-in-out infinite;
+    stroke: var(--primary-color);
+    stroke-linecap: round;
+    fill: var(--background-color);
+  }
+
+  g.spinner > text {
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  @keyframes rotate {
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0; }
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35; }
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124; }
+  }`;
+
+// Template fragments
+
+const infoBoxView = (areas, projDef) =>
+  html`<div class="info">
+    ${areasView(areas)}<br>
+    ${projDefView(projDef)}
+    <slot></slot>
+  </div>`;
+
+const areasView = (areas) =>
+  html`Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
+    (area,i) =>
+      html`${i > 0 ? ', ' : ''}<code>${area}</code>`)}</strong> ]`;
+
+const projDefView = (projDef) =>
+  html`<strong>${projDef?.name}</strong>
+    projection (<code>${projDef?.id}</code>)`;
+
+const spinnerViewFrag = (width, height) =>
+  svg`<g class="spinner">
+    <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" stroke-width="2" />
+    <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
+  </g>`;
+
+const mapViewFrag = (width, height) =>
+  svg`<defs>
+    <circle id="outline" cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
+    <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
+  </defs>
+  <g clip-path="#clip">
+    <use xlink:href="#outline" class="sphere" />
+  </g>
+  <use xlink:href="#outline" class="outline" />`;
+  // <defs>
+  //   <path id="outline" d="${this.pathFn(H3Worldmap.outlineGeom)}" />
+  //   <clipPath id="clip"><use href="#outline" /></clipPath>
+  // </defs>
+  // <g clip-path="#clip">
+  //   <use href="#outline" class="sphere" />
+  //   <!-- <path d="${this.pathFn(this.graticuleGeom)}" class="graticule" /> -->
+  //   <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
+  //   <path d="${this.pathFn(land)}" class="land" />
+  //   <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
+  //   <path d="${this.pathFn(this.areasGeom)}" class="areas" />
+  // </g>
+  // <use href="#outline" class="outline" />
+
+const mapViewOrSpinner = (aspectRatio) => {
+  const [ width, height ] =
+    (aspectRatio === null)
+      ? [ 100, 100 ]
+      : [ 100 * aspectRatio, 100 ];
+  return svg`
+    <svg id="map" viewBox="0 0 ${width} ${height}">
+      ${aspectRatio === null
+        ? spinnerViewFrag(width,height)
+        : mapViewFrag(width,height)}
+    </svg>`;
 }
 
 /**
@@ -39,42 +165,27 @@ const AVAILABLE_PROJECTIONS = new Map([
 /**
  * ‹h3-worldmap› custom element.
  *
+ * About the update/layout/paint flow:
+ *
+ *  1. As long as we don't know the size of the SVG element,
+ *     we can't draw the map, because we need to know its
+ *     aspect ratio, to set the view box system and configure
+ *     the D3-geo projection to use the whole available space,
+ *     even when the content box is not squarish.
+ *  2. So we start by rendering a loading spinner, to let the
+ *     browser compute layout and assign the size of its container.
+ *  3. Once the aspect ratio of the SVG container element is known,
+ *     we can start to draw the map, inside the same SVG element.
+ *  4. All of obviously this happens in two different frames,
+ *     with a repaint, hopefully without a re-layout.
+ *
  * @fires (nothing) - Indicates (nothing)
  * @slot - This element has a slot
  * @csspart button - The button
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return css`
-      :host {
-        display: inline-block;
-        --primary-color: black;
-        --secondary-color: #dddddd;
-        --tertiary-color: #cccccc;
-        --highlight-color: #990000;
-        --areas-color: #cc0000cc;
-        --bounding-box-color: #ddddddcc;
-        --background-color: white;
-      }
-
-      svg#map { width: 100%; height: 66vh; }
-      .spinner { fill: none; stroke: var(--primary-color); }
-      .outline { fill: none; stroke: var(--secondary-color); }
-      .sphere { fill: var(--background-color); stroke: none; }
-      .land { fill: var(--primary-color); stroke: none; }
-      .graticule { fill: none; stroke: var(--secondary-color); }
-      .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
-      .areas { fill: var(--areas-color); stroke: var(--highlight-color); }
-      .bbox { fill: none; stroke: var(--highlight-color); }
-
-      div.info {
-        color: var(--primary-color);
-        border: 3px solid var(--primary-color); border-radius: 1.5rem;
-        padding: 1rem 1.5rem;
-      }
-
-      code { font-size: 1.3rem; }
-    `;
+    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -115,6 +226,8 @@ export class H3Worldmap extends LitElement {
        *    property accordingly;
        * 3. which will finally trigger a re-render of the SVG element
        *    by Lit, with the correct aspect ratio being available.
+       *
+       * @type {number}
        */
       _aspectRatio: { type: Number, state: true },
     };
@@ -123,11 +236,11 @@ export class H3Worldmap extends LitElement {
   constructor() {
     super();
 
-    // Public attributes/properties (observed)
+    // Public attributes/properties (observed by Lit)
     this.projection = "orthographic";    // will trigger its property setter
     this.areas = [];                     // will trigger its property setter
 
-    // Internal state properties (observed)
+    // Internal state properties (observed by Lit)
     this._aspectRatio = null;             // width/height of SVG Element, computed after first paint
 
     // Internal private properties (derived, not observed)
@@ -139,9 +252,12 @@ export class H3Worldmap extends LitElement {
     // Validates the areas, which should be an array of valid H3-indexes
     if( !Array.isArray( val))
       throw new TypeError( `Property 'areas' must contain an array of H3-indexes; got ${val}`);
+
     const anyInvalidArea = val.find( area => !h3IsValid( area));
     if( anyInvalidArea)
       throw new TypeError( `Property 'areas' must contain valid H3-indexes; '${anyInvalidArea}' is an invalid H3-index`)
+
+    // Update the property with the validated value
     const oldAreas = this._areas;
     this._areas = val;
     this.requestUpdate("areas", oldAreas);
@@ -151,6 +267,8 @@ export class H3Worldmap extends LitElement {
     // Validates the new projection identifier
     if( !AVAILABLE_PROJECTIONS.has( val))
       throw new RangeError( `Unsupported 'projection' property value: '${val}'`);
+
+    // Update the property with the validated value
     const oldId = this._projection;
     this._projection = val;
     this.requestUpdate("projection", oldId);
@@ -160,20 +278,14 @@ export class H3Worldmap extends LitElement {
     return this.renderRoot?.querySelector('svg#map') ?? null;
   }
 
-  // Measure inner width and height of the Map SVG element
-  // and update the aspect ratio internal state property,
-  // which is observed by Lit and will re-render
-  // @return the request ID (could be used to cancel the request)
   _measureSVGElement() {
     return requestAnimationFrame(() => {
       const clientRect = this._SVGElement.getBoundingClientRect();
-
       this._aspectRatio = clientRect.width / clientRect.height;
     });
   }
 
   willUpdate(changedProperties) {
-    // Computes derived properties
     if (changedProperties.has('projection')) {
       this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
     }
@@ -182,9 +294,7 @@ export class H3Worldmap extends LitElement {
     }
   }
 
-  updated() {
-    // After first paint, measure actual width and height
-    // of the SVG Element and compute its aspect ratio
+  firstUpdated() {
     if (this._aspectRatio === null) {
       this._measureSVGElement();
     }
@@ -192,80 +302,9 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this.worldMapFrag(this._aspectRatio),
-      this.infoBoxFrag(this._uniqueAreas, this._projectionDef)
+      mapViewOrSpinner(this._aspectRatio),
+      infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
-  }
-
-  infoBoxFrag(areas, projDef) {
-    return html`
-      <div class="info">
-        ${this.areasFrag(areas)}<br>
-        ${this.projectionFrag(projDef)}
-        <slot></slot>
-      </div>`;
-  }
-
-  areasFrag(areas) {
-    return html`
-      Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
-        (area,i) =>
-          html`${i > 0 ? ', ' : ''}<code>${area}</code>`)}</strong> ]`;
-  }
-
-  projectionFrag(projDef) {
-    return html`
-      <strong>${projDef?.name}</strong>
-        projection (<code>${projDef?.id}</code>)`;
-  }
-
-  worldMapFrag(aspectRatio) {
-    if( aspectRatio === null) {
-      // As long as we don't know the size of the SVG element, we can't
-      // draw the map — because we need to know its aspect ratio —;
-      // so we start by rendering a loading spinner, to let the browser
-      // compute and assign the size
-      return svg`<svg id="map" viewBox="0 0 100 100">
-        <defs>
-          <circle id="spinner" cx="50" cy="50" r="48" class="spinner" />
-          <clipPath id="clip"><use xlink:href="#spinner"/></clipPath>
-        </defs>
-        <g clip-path="#clip">
-          <use xlink:href="#spinner" class="sphere" />
-        </g>
-        <use xlink:href="#spinner" class="outline" />
-      </svg>`;
-    } else {
-      // Once the aspect ratio of the SVG element is known,
-      // we can draw the map (aspect ratio is needed to define
-      // the viewbox and have the D3 projections use all the
-      // available space to the best, even when it's not squarish)
-      const [ width, height ] = [ 100 * aspectRatio, 100 ];
-      return svg`
-        <svg id="map" viewBox="0 0 ${width} ${height}">
-          <defs>
-            <circle id="outline" cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
-            <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
-          </defs>
-          <g clip-path="#clip">
-            <use xlink:href="#outline" class="sphere" />
-          </g>
-          <use xlink:href="#outline" class="outline" />
-        </svg>`;
-        // <defs>
-        //   <path id="outline" d="${this.pathFn(H3Worldmap.outlineGeom)}" />
-        //   <clipPath id="clip"><use href="#outline" /></clipPath>
-        // </defs>
-        // <g clip-path="#clip">
-        //   <use href="#outline" class="sphere" />
-        //   <!-- <path d="${this.pathFn(this.graticuleGeom)}" class="graticule" /> -->
-        //   <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
-        //   <path d="${this.pathFn(land)}" class="land" />
-        //   <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
-        //   <path d="${this.pathFn(this.areasGeom)}" class="areas" />
-        // </g>
-        // <use href="#outline" class="outline" />
-    }
   }
 }
 
