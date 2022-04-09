@@ -102,6 +102,7 @@ const projDefView = (projDef) =>
   html`<strong>${projDef?.name}</strong>
     projection (<code>${projDef?.id}</code>)`;
 
+/*
 const spinnerViewFrag = (width, height) =>
   svg`<g class="spinner">
     <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" stroke-width="2" />
@@ -143,6 +144,7 @@ const mapViewOrSpinner = (aspectRatio) => {
         : mapViewFrag(width,height)}
     </svg>`;
 }
+*/
 
 /**
  * Map of the projection identifiers, which are the possible values of the
@@ -303,9 +305,56 @@ export class H3Worldmap extends LitElement {
     }
   }
 
+
+  spinnerViewFrag(width, height) { 
+    svg`<g class="spinner">
+      <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" stroke-width="2" />
+      <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
+    </g>`;
+  }
+
+  mapViewFrag(width, height) {  
+    return svg`<defs>
+      <circle id="outline" cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
+      <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
+    </defs>
+    <g clip-path="#clip">
+      <use xlink:href="#outline" class="sphere" />
+    </g>
+    <use xlink:href="#outline" class="outline" />`;
+    // <defs>
+    //   <path id="outline" d="${this.pathFn(H3Worldmap.outlineGeom)}" />
+    //   <clipPath id="clip"><use href="#outline" /></clipPath>
+    // </defs>
+    // <g clip-path="#clip">
+    //   <use href="#outline" class="sphere" />
+    //   <!-- <path d="${this.pathFn(this.graticuleGeom)}" class="graticule" /> -->
+    //   <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
+    //   <path d="${this.pathFn(land)}" class="land" />
+    //   <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
+    //   <path d="${this.pathFn(this.areasGeom)}" class="areas" />
+    // </g>
+    // <use href="#outline" class="outline" />
+  }
+
+  mapViewOrSpinner(aspectRatio)  {
+    console.log(`mapViewOrSpinner: ${aspectRatio}`);
+    const [ width, height ] =
+      (aspectRatio === null)
+        ? [ 100, 100 ]
+        : [ 100 * aspectRatio, 100 ];
+    return svg`
+      <svg id="map" viewBox="0 0 ${width} ${height}">
+        ${aspectRatio === null
+          ? this.spinnerViewFrag(width,height)
+          : this.mapViewFrag(width,height)}
+      </svg>`;
+  }
+
+
   render() {
     return [
-      mapViewOrSpinner(this._aspectRatio),
+      this.mapViewOrSpinner(this._aspectRatio),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
