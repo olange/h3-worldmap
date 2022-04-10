@@ -8,6 +8,7 @@ import { LitElement, html, svg, css } from 'lit';
 import * as d3 from 'd3';
 import { h3IsValid } from 'h3-js';
 import * as h3 from 'h3-js';
+import * as topojson from 'topojson-client';
 
 // Utility functions
 
@@ -56,6 +57,7 @@ const selectorStyles = css`
   .select {
     color: var(--primary-color);
     font-size: 1.3rem;
+    padding: 5px;
   }`;
 
 const spinnerStyles = css`
@@ -130,7 +132,7 @@ const mapViewFrag = (width, height, that) => {
   <g clip-path="#clip">
     <use xlink:href="#outline" class="sphere" />
     <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
-
+    <path d="${that.pathFn(that.land)}" class="land" />
     <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
     <path d="${that.pathFn(that.areasGeom)}" class="areas" />
   </g>
@@ -234,6 +236,8 @@ export class H3Worldmap extends LitElement {
        */
       areas: { type: Array },
 
+      land: { type: Object },
+
       /**
        * Computed aspect ratio (width / height) of the client
        * rect of the map SVG Element.
@@ -273,6 +277,36 @@ export class H3Worldmap extends LitElement {
 
     this._width = undefined;
     this._height = undefined;
+
+    this.land = undefined;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchLandData();
+    console.log("H3Worldmap connectedCallback");
+  }
+
+  fetchLandData() {
+    fetch('../land-50m.json')
+    //fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json") // fails
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('File not found');
+        }
+        // const rj = response.json();
+        // console.log('fetchLandData response:', rj);
+        // return rj
+        return response.json();
+    })
+    .then(world => {
+        console.log('fetchLandData world:', world);
+        this.land = topojson.feature(world, world.objects.land);
+        console.log('fetchLandData land:', this.land);
+    })
+    .catch((error) => {
+        console.error('fetchLandData error:', error);
+    });
   }
 
   set areas( val) {
