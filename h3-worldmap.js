@@ -7,6 +7,8 @@
 import { LitElement, html, svg, css } from 'lit';
 import * as d3 from 'd3';
 import { h3IsValid } from 'h3-js';
+import * as h3 from 'h3-js';
+import * as topojson from 'topojson-client';
 
 // Utility functions
 
@@ -321,6 +323,58 @@ export class H3Worldmap extends LitElement {
     return this.renderRoot?.querySelector('svg#map') ?? null;
   }
 
+  get areasGeom() {
+    return {
+      type: "FeatureCollection",
+      features: this._areas.map((area) => ({
+        type: "Feature",
+        properties: { id: area, pentagon: h3.h3IsPentagon(area) },
+        geometry: {
+          type: "Polygon",
+          coordinates: [h3.h3ToGeoBoundary(area, true).reverse()]
+        }
+      }))
+    };
+  }
+
+  get centroid() {
+    return d3.geoCentroid(this.areasGeom);
+  }
+
+  get bbox() {
+    const [[minLon, minLat], [maxLon, maxLat]] = d3.geoBounds(
+      this.areasGeom
+    );
+    return { minLat, minLon, maxLat, maxLon };
+  }
+
+  get bsphereGeom() {
+    //console.log("bsphereGeom this.bbox", this.bbox);
+    const { minLat, minLon, maxLat, maxLon } = this.bbox;
+    const radius =
+      Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
+    //console.log(radius, maxLat - minLat, maxLon - minLon);
+    const geoCircle = d3.geoCircle().center(this.centroid).radius(radius);
+    return geoCircle();
+  }
+
+  get hexesGeom() {
+    return {
+      type: "FeatureCollection",
+      features: h3.getRes0Indexes()
+        // .map( i => h3.h3ToChildren( i, level))
+        .flat()
+        .map( d => ({
+          type: "Feature",
+          properties: { id: d, pentagon: h3.h3IsPentagon(d) },
+          geometry: {
+            type: "Polygon",
+            coordinates: [ h3.h3ToGeoBoundary(d, true).reverse() ]
+          }
+        }))
+    };
+  }
+
   _measureSVGElement() {
     return requestAnimationFrame(() => {
       const clientRect = this._SVGElement.getBoundingClientRect();
@@ -368,6 +422,10 @@ export class H3Worldmap extends LitElement {
     </defs>
     <g clip-path="#clip">
       <use xlink:href="#outline" class="sphere" />
+      <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
+
+      <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
+      <path d="${this.pathFn(this.areasGeom)}" class="areas" />
     </g>
     <use xlink:href="#outline" class="outline" />`;
     // <defs>
