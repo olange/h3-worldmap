@@ -238,6 +238,7 @@ export class H3Worldmap extends LitElement {
        */
       areas: { type: Array },
 
+      land: { type: Object },
       /**
        * Computed aspect ratio (width / height) of the client
        * rect of the map SVG Element.
@@ -277,6 +278,37 @@ export class H3Worldmap extends LitElement {
 
     this._width = undefined
     this._height = undefined
+
+    this.land = undefined;
+  }
+
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchLandData();
+    console.log("H3Worldmap connectedCallback");
+  }
+
+  fetchLandData() {
+    //fetch('../land-50m.json') // works
+    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json") // works
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('File not found');
+        }
+        // const rj = response.json();
+        // console.log('fetchLandData response:', rj);
+        // return rj
+        return response.json();
+    })
+    .then(world => {
+        console.log('fetchLandData world:', world);
+        this.land = topojson.feature(world, world.objects.land);
+        console.log('fetchLandData land:', this.land);
+    })
+    .catch((error) => {
+        console.error('fetchLandData error:', error);
+    });
   }
 
   set areas( val) {
@@ -423,7 +455,7 @@ export class H3Worldmap extends LitElement {
     <g clip-path="#clip">
       <use xlink:href="#outline" class="sphere" />
       <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
-
+      <path d="${this.pathFn(this.land)}" class="land" />
       <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
       <path d="${this.pathFn(this.areasGeom)}" class="areas" />
     </g>
