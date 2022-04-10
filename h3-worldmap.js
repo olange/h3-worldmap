@@ -7,6 +7,7 @@
 import { LitElement, html, svg, css } from 'lit';
 import * as d3 from 'd3';
 import { h3IsValid } from 'h3-js';
+import * as h3 from 'h3-js';
 
 // Utility functions
 
@@ -51,8 +52,8 @@ const infoStyles = css`
     font-size: 1.3rem;
   }`;
 
-const selectStyles = css`
-  div.select {
+const selectorStyles = css`
+  .select {
     color: var(--primary-color);
     font-size: 1.3rem;
   }`;
@@ -117,6 +118,8 @@ const spinnerViewFrag = (width, height) =>
 const mapViewFrag = (width, height, that) => { 
   console.log( `mapViewFrag(): projFn ${that.projFn}`);
   console.log( `mapViewFrag(): pathFn ${that.pathFn}`);
+  console.log( `mapViewFrag(): bsphereGeom ${that.bsphereGeom}`);
+  console.log( `mapViewFrag(): bsphereGeom path ${that.pathFn(that.bsphereGeom).slice(0, 50)} ...`);
   console.log( `mapViewFrag(): outlineGeom ${H3Worldmap.outlineGeom}`);
   console.log( `mapViewFrag(): outlineGeom path ${that.pathFn(H3Worldmap.outlineGeom).slice(0, 50)} ...`);
 
@@ -126,6 +129,10 @@ const mapViewFrag = (width, height, that) => {
   </defs>
   <g clip-path="#clip">
     <use xlink:href="#outline" class="sphere" />
+    <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
+
+    <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
+    <path d="${that.pathFn(that.areasGeom)}" class="areas" />
   </g>
   <use xlink:href="#outline" class="outline" />`;
   // <defs>
@@ -202,7 +209,7 @@ const AVAILABLE_PROJECTIONS = new Map([
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, selectStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, infoStyles, selectorStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -297,7 +304,7 @@ export class H3Worldmap extends LitElement {
   get projFn() {
     const proj = this._projectionDef.ctorFn();
     return proj.fitSize( [this._width, this._height], H3Worldmap.outlineGeom)
-//               .rotate( this.centroid[ 1], this.centroid[ 0]);
+               .rotate( this.centroid[ 1], this.centroid[ 0]);
   }
 
   get pathFn() {
@@ -310,6 +317,58 @@ export class H3Worldmap extends LitElement {
 
   get _SVGElement() {
     return this.renderRoot?.querySelector('svg#map') ?? null;
+  }
+
+  get areasGeom() {
+    return {
+      type: "FeatureCollection",
+      features: this._areas.map((area) => ({
+        type: "Feature",
+        properties: { id: area, pentagon: h3.h3IsPentagon(area) },
+        geometry: {
+          type: "Polygon",
+          coordinates: [h3.h3ToGeoBoundary(area, true).reverse()]
+        }
+      }))
+    };
+  }
+
+  get centroid() {
+    return d3.geoCentroid(this.areasGeom);
+  }
+
+  get bbox() {
+    const [[minLon, minLat], [maxLon, maxLat]] = d3.geoBounds(
+      this.areasGeom
+    );
+    return { minLat, minLon, maxLat, maxLon };
+  }
+
+  get bsphereGeom() {
+    //console.log("bsphereGeom this.bbox", this.bbox);
+    const { minLat, minLon, maxLat, maxLon } = this.bbox;
+    const radius =
+      Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
+    //console.log(radius, maxLat - minLat, maxLon - minLon);
+    const geoCircle = d3.geoCircle().center(this.centroid).radius(radius);
+    return geoCircle();
+  }
+
+  get hexesGeom() {
+    return {
+      type: "FeatureCollection",
+      features: h3.getRes0Indexes()
+        // .map( i => h3.h3ToChildren( i, level))
+        .flat()
+        .map( d => ({
+          type: "Feature",
+          properties: { id: d, pentagon: h3.h3IsPentagon(d) },
+          geometry: {
+            type: "Polygon",
+            coordinates: [ h3.h3ToGeoBoundary(d, true).reverse() ]
+          }
+        }))
+    };
   }
 
   _measureSVGElement() {
