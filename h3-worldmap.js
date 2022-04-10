@@ -51,6 +51,12 @@ const infoStyles = css`
     font-size: 1.3rem;
   }`;
 
+const selectStyles = css`
+  div.select {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+  }`;
+
 const spinnerStyles = css`
   g.spinner {
     animation: rotate 2s linear infinite;
@@ -67,7 +73,7 @@ const spinnerStyles = css`
     text-anchor: middle;
     dominant-baseline: middle;
   }
-
+  
   @keyframes rotate {
     100% { transform: rotate(360deg); }
   }
@@ -108,9 +114,14 @@ const spinnerViewFrag = (width, height) =>
     <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
   </g>`;
 
-const mapViewFrag = (width, height) =>
-  svg`<defs>
-    <circle id="outline" cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
+const mapViewFrag = (width, height, that) => { 
+  console.log( `mapViewFrag(): projFn ${that.projFn}`);
+  console.log( `mapViewFrag(): pathFn ${that.pathFn}`);
+  console.log( `mapViewFrag(): outlineGeom ${H3Worldmap.outlineGeom}`);
+  console.log( `mapViewFrag(): outlineGeom path ${that.pathFn(H3Worldmap.outlineGeom).slice(0, 50)} ...`);
+
+  return svg`<defs>
+    <path id="outline" d="${that.pathFn(H3Worldmap.outlineGeom)}" />
     <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
   </defs>
   <g clip-path="#clip">
@@ -130,17 +141,20 @@ const mapViewFrag = (width, height) =>
   //   <path d="${this.pathFn(this.areasGeom)}" class="areas" />
   // </g>
   // <use href="#outline" class="outline" />
+}
 
-const mapViewOrSpinner = (aspectRatio) => {
+const mapViewOrSpinner = (aspectRatio, that) => {
+  console.log("mapViewOrSpinner", that )
   const [ width, height ] =
     (aspectRatio === null)
       ? [ 100, 100 ]
       : [ 100 * aspectRatio, 100 ];
+  [that._width, that._height] = [width, height];
   return svg`
     <svg id="map" viewBox="0 0 ${width} ${height}">
       ${aspectRatio === null
         ? spinnerViewFrag(width,height)
-        : mapViewFrag(width,height)}
+        : mapViewFrag(width,height, that)}
     </svg>`;
 }
 
@@ -188,7 +202,7 @@ const AVAILABLE_PROJECTIONS = new Map([
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, infoStyles, selectStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -249,6 +263,9 @@ export class H3Worldmap extends LitElement {
     // Internal private properties (derived, not observed)
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
+
+    this._width = undefined;
+    this._height = undefined;
   }
 
   set areas( val) {
@@ -275,6 +292,20 @@ export class H3Worldmap extends LitElement {
     const oldId = this._projection;
     this._projection = val;
     this.requestUpdate("projection", oldId);
+  }
+
+  get projFn() {
+    const proj = this._projectionDef.ctorFn();
+    return proj.fitSize( [this._width, this._height], H3Worldmap.outlineGeom)
+//               .rotate( this.centroid[ 1], this.centroid[ 0]);
+  }
+
+  get pathFn() {
+    return d3.geoPath( this.projFn);
+  }
+
+  static get outlineGeom() {
+    return { type: "Sphere" };
   }
 
   get _SVGElement() {
@@ -305,9 +336,31 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      mapViewOrSpinner(this._aspectRatio),
+      mapViewOrSpinner(this._aspectRatio, this),
+      this.selectProjection(),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
+  }
+
+  selectProjection() {
+    return html`
+      <div class="select">
+        <select name="myselect" id="myselect"  class="select" @change="${this.selectProjectionFn}">
+          <option value="" selected disabled hidden>Select projection</option>
+          <option value="orthographic">Orthographic</option>
+          <option value="naturalEarth">Natural Earth</option>
+          <option value="conicEqualArea">Conic equal-area</option>
+          <option value="stereographic">Stereographic</option>
+          <option value="gnomonic">Gnomonic</option>
+          <option value="mercator">Mercator</option>
+        </select>
+      </div>
+    `;
+  }
+
+  selectProjectionFn(e) {
+    console.log('select', e.target.value);
+    this.projection = e.target.value;
   }
 }
 
