@@ -51,6 +51,13 @@ const infoStyles = css`
     font-size: 1.3rem;
   }`;
 
+const selectorStyles = css`
+  .select {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    padding: 5px;
+  }`;
+
 const spinnerStyles = css`
   g.spinner {
     animation: rotate 2s linear infinite;
@@ -92,6 +99,20 @@ const infoBoxView = (areas, projDef) =>
     ${projDefView(projDef)}
     <slot></slot>
   </div>`;
+
+const selectorView = (that) =>
+  html`
+    <div>
+      <select name="myselect" id="myselect" class="select" @change="${that.selectProjectionFn}">
+        <option value="" selected disabled hidden>Select projection</option>
+        <option value="orthographic">Orthographic</option>
+        <option value="naturalEarth">Natural Earth</option>
+        <option value="conicEqualArea">Conic equal-area</option>
+        <option value="stereographic">Stereographic</option>
+        <option value="gnomonic">Gnomonic</option>
+        <option value="mercator">Mercator</option>
+        </select>
+    </div>`;
 
 const areasView = (areas) =>
   html`Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
@@ -190,7 +211,7 @@ const AVAILABLE_PROJECTIONS = new Map([
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, infoStyles, selectorStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -251,6 +272,9 @@ export class H3Worldmap extends LitElement {
     // Internal private properties (derived, not observed)
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
+
+    this._width = undefined
+    this._height = undefined
   }
 
   set areas( val) {
@@ -279,6 +303,20 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
+  get projFn() {
+    const proj = this._projectionDef.ctorFn();
+    return proj.fitSize( [this._width, this._height], H3Worldmap.outlineGeom)
+//                .rotate( this.centroid[ 1], this.centroid[ 0]);
+  }
+
+  get pathFn() {
+    return d3.geoPath( this.projFn);
+  }
+
+  static get outlineGeom() {
+    return { type: "Sphere" };
+  }
+
   get _SVGElement() {
     return this.renderRoot?.querySelector('svg#map') ?? null;
   }
@@ -305,17 +343,27 @@ export class H3Worldmap extends LitElement {
     }
   }
 
+  selectProjectionFn(e) {
+    console.log('select', e.target.value);
+    this.projection = e.target.value;
+  }
 
-  spinnerViewFrag(width, height) { 
+  spinnerViewFrag(width, height) {
     svg`<g class="spinner">
       <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" stroke-width="2" />
       <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
     </g>`;
   }
 
-  mapViewFrag(width, height) {  
+  mapViewFrag(width, height) {
+
+    console.log( `mapViewFrag(): projFn ${this.projFn}`);
+    console.log( `mapViewFrag(): pathFn ${this.pathFn}`);
+    console.log( `mapViewFrag(): outlineGeom ${H3Worldmap.outlineGeom}`);
+    console.log( `mapViewFrag(): outlineGeom path ${this.pathFn(H3Worldmap.outlineGeom).slice(0, 50)} ...`);
+
     return svg`<defs>
-      <circle id="outline" cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
+      <path id="outline" d="${this.pathFn(H3Worldmap.outlineGeom)}" />
       <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
     </defs>
     <g clip-path="#clip">
@@ -343,6 +391,7 @@ export class H3Worldmap extends LitElement {
       (aspectRatio === null)
         ? [ 100, 100 ]
         : [ 100 * aspectRatio, 100 ];
+    [this._width, this._height] = [width, height];
     return svg`
       <svg id="map" viewBox="0 0 ${width} ${height}">
         ${aspectRatio === null
@@ -351,11 +400,12 @@ export class H3Worldmap extends LitElement {
       </svg>`;
   }
 
-
   render() {
+    //console.log(`render() H3Worldmap.styles: ${H3Worldmap.styles}`);
     return [
       this.mapViewOrSpinner(this._aspectRatio),
-      infoBoxView(this._uniqueAreas, this._projectionDef)
+      selectorView(this),
+      infoBoxView(this._uniqueAreas, this._projectionDef),      
     ];
   }
 }
