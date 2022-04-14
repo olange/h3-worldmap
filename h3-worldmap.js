@@ -36,7 +36,7 @@ const mapStyles = css`
   svg#map { width: 100%; height: 100%; }
   .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.5; }
   .sphere { fill: var(--background-color); stroke: none; }
-  .land { fill: var(--primary-color); stroke: none; }
+  .land { fill: none; stroke: var(--primary-color); stroke-width: 0.35; }
   .graticule { fill: none; stroke: var(--secondary-color); }
   .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
   .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.5; }
@@ -126,7 +126,7 @@ const mapViewFrag = (width, height, that) => {
     <use xlink:href="#outline" class="sphere" />
     <!-- <path d="${that.pathFn(that.graticuleGeom)}" class="graticule" /> -->
     <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
-    <path d="${that.pathFn(that.land)}" class="land" />
+    <path d="${that.pathFn(that._land)}" class="land" />
     <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
     <path d="${that.pathFn(that.areasGeom)}" class="areas" />
   </g>
@@ -216,7 +216,28 @@ export class H3Worldmap extends LitElement {
        */
       areas: { type: Array },
 
-      land: { type: Object },
+      /**
+       * URL of a TopoJSON file describing the geometry of the
+       * world we'd like to display on the map. It is typically
+       * one of the World Atlases available from
+       * https://github.com/topojson/world-atlas
+       */
+      geometrySrc: { type: String, attribute: "geometry-src" },
+
+      /**
+       * Name of the geometry collection within the TopoJSON geometry
+       * world atalas, which we'd like to display. For instance, the
+       * countries-50m.json TopoJSON world atlas contains two geometry
+       * collections named `countries` and `land`; the attribute
+       * should take one of these collection names.
+       */
+      geometryColl: { type: String, attribute: "geometry-coll" },
+
+      /**
+       * World Atlas TopoJSON geometry, as loaded from the
+       * `atlas-src` and `atlas-coll` attributes.
+       */
+      _land: { type: Object, state: true },
 
       /**
        * Computed aspect ratio (width / height) of the client
@@ -247,6 +268,8 @@ export class H3Worldmap extends LitElement {
     // Public attributes/properties (observed by Lit)
     this.projection = "orthographic";    // will trigger its property setter
     this.areas = [];                     // will trigger its property setter
+    this.geometrySrc = "land-50m.json";
+    this.geometryColl = "land";
 
     // Internal state properties (observed by Lit)
     this._aspectRatio = null;             // width/height of SVG Element, computed after first paint
@@ -258,27 +281,25 @@ export class H3Worldmap extends LitElement {
     this._width = undefined;
     this._height = undefined;
 
-    this.land = undefined;
+    this._land = undefined;
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this.fetchLandData();
-  }
-
-  fetchLandData() {
-    fetch('../land-50m.json')
-    //fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json") // fails
-    .then(response => {
+  async fetchLandData() {
+    return fetch(this.geometrySrc)
+      .then(response => {
         if (!response.ok) {
             throw new Error('File not found');
         }
         return response.json();
-    })
-    .then(world => {
-        this.land = topojson.feature(world, world.objects.land);
-    })
-    .catch(error => { throw error; });
+      })
+      .then(world => {
+        const topologyObject =
+          Object.hasOwn( world.objects, this.geometryColl)
+          ? world.objects[ this.geometryColl] : world.objects.land;
+        this._land = topojson.feature(world, topologyObject);
+      })
+      .catch(
+        error => { throw error; });
   }
 
   set areas( val) {
@@ -392,6 +413,11 @@ export class H3Worldmap extends LitElement {
   }
 
   firstUpdated() {
+    // TODO: we should not ignore the promise returned
+    // TODO: the spinner should remain as long as we have
+    // not loaded the TopoJSON file
+    this.fetchLandData();
+
     if (this._aspectRatio === null) {
       this._measureSVGElement();
     }
