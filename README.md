@@ -1,8 +1,35 @@
 # ‹h3-worldmap› Web Component
 
-Based on the `lit-starter-js` package in [the main Lit
-repo](https://github.com/lit/lit). Issues and PRs for this template should be
-filed in that repo.
+Draws a set of H3 _indexes_ as areas on the terrestrial globe, with the given _geodesic projection_ and _land geometry_.
+
+_H3 indexes_ are coordinates of the [H3 geospatial hierarchical indexing system](http://h3geo.org), coordinates which designate hexagonal or pentagonal areas of various sizes.
+
+_Land geometry_ should be provided as a TopoJSON geometry, representing country or land boundaries, and will be drawn on a terrestrial globe.
+
+Suitable TopoJSON files are available from the [World Atlas TopoJSON](https://github.com/topojson/world-atlas) repository.
+
+## Example
+
+This HTML fragment:
+
+```html
+<h3-worldmap
+  projection="naturalEarth"
+  areas='[ "80abfffffffffff", "80e1fffffffffff", "80a5fffffffffff",
+           "8035fffffffffff", "801ffffffffffff" ]'
+  geometry-src="land-50m.json" geometry-coll="land">
+</h3-worldmap>
+```
+
+… would render as an SVG image looking like:
+
+<img title="Sample ‹h3-worldmap› with «natural earth» projection" src="docs/images/h3-worldmap-natural-earth.png" height="200">
+
+## Status
+
+🌱 Work-in-progress. Early stage of development, unstable and uncomplete API.
+
+Currently porting the code of the ‹H3MiniMap› web component, from the ObservableHQ [@olange/h3-minimap](https://observablehq.com/@olange/h3-minimap) notebook.
 
 ## Setup
 
@@ -13,12 +40,6 @@ npm i
 ```
 
 ## Testing
-
-This sample modern-web.dev's
-[@web/test-runner](https://www.npmjs.com/package/@web/test-runner) along with
-Mocha, Chai, and some related helpers for testing. See the
-[modern-web.dev testing documentation](https://modern-web.dev/docs/test-runner/overview) for
-more information.
 
 Tests can be run with the `test` script, which will run your tests against Lit's development mode (with more verbose errors) as well as against Lit's production mode:
 

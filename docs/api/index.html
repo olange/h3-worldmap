@@ -34,6 +34,20 @@
         <h2>&lt;h3-worldmap></h2>
         <div>
           ‹h3-worldmap› custom element.
+
+About the update/layout/paint flow:
+
+ 1. As long as we don't know the size of the SVG element,
+    we can't draw the map, because we need to know its
+    aspect ratio, to set the view box system and configure
+    the D3-geo projection to use the whole available space,
+    even when the content box is not squarish.
+ 2. So we start by rendering a loading spinner, to let the
+    browser compute layout and assign the size of its container.
+ 3. Once the aspect ratio of the SVG container element is known,
+    we can start to draw the map, inside the same SVG element.
+ 4. All of obviously this happens in two different frames,
+    with a repaint, hopefully without a re-layout.
         </div>
         
     <h3>Attributes</h3>
@@ -71,7 +85,7 @@ execution flow:
    SVG element, compute its aspect ratio and set this state
    property accordingly;
 3. which will finally trigger a re-render of the SVG element
-   by Lit, with the correct aspect ratio being available.</td><td></td><td></td>
+   by Lit, with the correct aspect ratio being available.</td><td>number</td><td></td>
         </tr>
       
     </table>
@@ -116,7 +130,7 @@ execution flow:
    SVG element, compute its aspect ratio and set this state
    property accordingly;
 3. which will finally trigger a re-render of the SVG element
-   by Lit, with the correct aspect ratio being available.</td><td>null</td><td>null</td>
+   by Lit, with the correct aspect ratio being available.</td><td>number</td><td>null</td>
         </tr>
       
         <tr>
@@ -130,82 +144,6 @@ execution flow:
     </table>
   
         
-    <h3>Methods</h3>
-    <table>
-      <tr>
-        <th>Name</th><th>Parameters</th><th>Description</th><th>Return</th>
-      </tr>
-      
-        <tr>
-          <td>infoBoxFrag</td><td>
-    
-    <table>
-      <tr>
-        <th>Name</th><th>Description</th><th>Type</th>
-      </tr>
-      
-        <tr>
-          <td>areas</td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>projDef</td><td></td><td></td>
-        </tr>
-      
-    </table>
-  </td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>areasFrag</td><td>
-    
-    <table>
-      <tr>
-        <th>Name</th><th>Description</th><th>Type</th>
-      </tr>
-      
-        <tr>
-          <td>areas</td><td></td><td></td>
-        </tr>
-      
-    </table>
-  </td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>projectionFrag</td><td>
-    
-    <table>
-      <tr>
-        <th>Name</th><th>Description</th><th>Type</th>
-      </tr>
-      
-        <tr>
-          <td>projDef</td><td></td><td></td>
-        </tr>
-      
-    </table>
-  </td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>worldMapFrag</td><td>
-    
-    <table>
-      <tr>
-        <th>Name</th><th>Description</th><th>Type</th>
-      </tr>
-      
-        <tr>
-          <td>aspectRatio</td><td></td><td></td>
-        </tr>
-      
-    </table>
-  </td><td></td><td></td>
-        </tr>
-      
-    </table>
-  
         
     <h3>Events</h3>
     <table>
