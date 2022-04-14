@@ -18,11 +18,13 @@
   </head>
   <body>
     <h3-worldmap
-      projection='naturalEarth'
+      projection="naturalEarth"
       areas='[
         "80abfffffffffff", "80e1fffffffffff", "80a5fffffffffff",
         "8035fffffffffff", "801ffffffffffff"
-      ]'>
+      ]'
+      world-geometry-src="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json"
+      world-geometry-coll="countries">
       <p>This is child content</p>
     </h3-worldmap>
   </body>

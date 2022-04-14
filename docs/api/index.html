@@ -71,6 +71,27 @@ For instance:
         </tr>
       
         <tr>
+          <td>world-geometry-src</td><td>URL of a TopoJSON file describing the geometry of the world
+we'd like to display on the map. It is typically one of the
+World Atlases available from https://github.com/topojson/world-atlas</td><td>url</td><td></td>
+        </tr>
+      
+        <tr>
+          <td>world-geometry-coll</td><td>Name of the geometry collection, which we'd like to display.
+Dependent upon the structure of the TopoJSON of the world
+geometry specified by the `worldGeometrySrc` property.
+
+For instance, the `countries-50m.json` TopoJSON world atlas [see below]
+contains two geometry collections, named `countries` and `land`;
+this attribute should take one of either collection names.</td><td>string</td><td></td>
+        </tr>
+      
+        <tr>
+          <td>_worldGeom</td><td>World Atlas TopoJSON geometry, as loaded from the
+`world-geometry-src` and `world-geometry-coll` attributes.</td><td>object</td><td></td>
+        </tr>
+      
+        <tr>
           <td>_aspectRatio</td><td>Computed aspect ratio (width / height) of the client
 rect of the map SVG Element.
 
@@ -112,7 +133,55 @@ the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td
         </tr>
       
         <tr>
+          <td>projFn</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>pathFn</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>outlineGeom</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
           <td>_SVGElement</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>areasGeom</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>centroid</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>bbox</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>bsphereGeom</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>hexesGeom</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>worldGeometrySrc</td><td>world-geometry-src</td><td>URL of a TopoJSON file describing the geometry of the world
+we'd like to display on the map. It is typically one of the
+World Atlases available from https://github.com/topojson/world-atlas</td><td>url</td><td>"https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"</td>
+        </tr>
+      
+        <tr>
+          <td>worldGeometryColl</td><td>world-geometry-coll</td><td>Name of the geometry collection, which we'd like to display.
+Dependent upon the structure of the TopoJSON of the world
+geometry specified by the `worldGeometrySrc` property.
+
+For instance, the `countries-50m.json` TopoJSON world atlas [see below]
+contains two geometry collections, named `countries` and `land`;
+this attribute should take one of either collection names.</td><td>string</td><td>"land"</td>
         </tr>
       
         <tr>
@@ -141,9 +210,34 @@ execution flow:
           <td>_projectionDef</td><td></td><td></td><td>null</td><td>null</td>
         </tr>
       
+        <tr>
+          <td>_width</td><td></td><td></td><td></td><td>undefined</td>
+        </tr>
+      
+        <tr>
+          <td>_height</td><td></td><td></td><td></td><td>undefined</td>
+        </tr>
+      
+        <tr>
+          <td>_worldGeom</td><td>_worldGeom</td><td>World Atlas TopoJSON geometry, as loaded from the
+`world-geometry-src` and `world-geometry-coll` attributes.</td><td>object</td><td>undefined</td>
+        </tr>
+      
     </table>
   
         
+    <h3>Methods</h3>
+    <table>
+      <tr>
+        <th>Name</th><th>Parameters</th><th>Description</th><th>Return</th>
+      </tr>
+      
+        <tr>
+          <td>fetchLandData</td><td></td><td></td><td></td>
+        </tr>
+      
+    </table>
+  
         
     <h3>Events</h3>
     <table>

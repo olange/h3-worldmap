@@ -36,7 +36,7 @@ const mapStyles = css`
   svg#map { width: 100%; height: 100%; }
   .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.5; }
   .sphere { fill: var(--background-color); stroke: none; }
-  .land { fill: var(--primary-color); stroke: none; }
+  .land { fill: none; stroke: var(--primary-color); stroke-width: 0.35; }
   .graticule { fill: none; stroke: var(--secondary-color); }
   .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
   .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.5; }
@@ -126,7 +126,7 @@ const mapViewFrag = (width, height, that) => {
     <use xlink:href="#outline" class="sphere" />
     <!-- <path d="${that.pathFn(that.graticuleGeom)}" class="graticule" /> -->
     <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
-    <path d="${that.pathFn(that.land)}" class="land" />
+    <path d="${that.pathFn(that._worldGeom)}" class="land" />
     <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
     <path d="${that.pathFn(that.areasGeom)}" class="areas" />
   </g>
@@ -216,7 +216,35 @@ export class H3Worldmap extends LitElement {
        */
       areas: { type: Array },
 
-      land: { type: Object },
+      /**
+       * URL of a TopoJSON file describing the geometry of the world
+       * we'd like to display on the map. It is typically one of the
+       * World Atlases available from https://github.com/topojson/world-atlas
+       *
+       * @type {url}
+       */
+      worldGeometrySrc: { type: String, attribute: "world-geometry-src" },
+
+      /**
+       * Name of the geometry collection, which we'd like to display.
+       * Dependent upon the structure of the TopoJSON of the world
+       * geometry specified by the `worldGeometrySrc` property.
+       *
+       * For instance, the `countries-50m.json` TopoJSON world atlas [see below]
+       * contains two geometry collections, named `countries` and `land`;
+       * this attribute should take one of either collection names.
+       *
+       * @type {string}
+       * @see https://github.com/topojson/world-atlas#countries-50m.json
+       */
+      worldGeometryColl: { type: String, attribute: "world-geometry-coll" },
+
+      /**
+       * World Atlas TopoJSON geometry, as loaded from the
+       * `world-geometry-src` and `world-geometry-coll` attributes.
+       * @type {object}
+       */
+      _worldGeom: { type: Object, state: true },
 
       /**
        * Computed aspect ratio (width / height) of the client
@@ -247,6 +275,8 @@ export class H3Worldmap extends LitElement {
     // Public attributes/properties (observed by Lit)
     this.projection = "orthographic";    // will trigger its property setter
     this.areas = [];                     // will trigger its property setter
+    this.worldGeometrySrc = "https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json";
+    this.worldGeometryColl = "land";
 
     // Internal state properties (observed by Lit)
     this._aspectRatio = null;             // width/height of SVG Element, computed after first paint
@@ -258,27 +288,25 @@ export class H3Worldmap extends LitElement {
     this._width = undefined;
     this._height = undefined;
 
-    this.land = undefined;
+    this._worldGeom = undefined;
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this.fetchLandData();
-  }
-
-  fetchLandData() {
-    fetch('../land-50m.json')
-    //fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json") // fails
-    .then(response => {
+  async fetchLandData() {
+    return fetch(this.worldGeometrySrc)
+      .then(response => {
         if (!response.ok) {
             throw new Error('File not found');
         }
         return response.json();
-    })
-    .then(world => {
-        this.land = topojson.feature(world, world.objects.land);
-    })
-    .catch(error => { throw error; });
+      })
+      .then(world => {
+        this._worldGeom =
+          Object.hasOwn(world.objects, this.worldGeometryColl) // avoid code injection
+          ? topojson.feature(world, this.worldGeometryColl)
+          : null;
+      })
+      .catch(
+        error => { throw error; });
   }
 
   set areas( val) {
@@ -392,6 +420,13 @@ export class H3Worldmap extends LitElement {
   }
 
   firstUpdated() {
+    // TODO: we should not ignore the promise returned
+    // TODO: the spinner should remain as long as we have
+    // not loaded the TopoJSON file
+    // TODO: world geometry should be reloaded when
+    // worldGeometrySrc|Coll properties change
+    this.fetchLandData();
+
     if (this._aspectRatio === null) {
       this._measureSVGElement();
     }

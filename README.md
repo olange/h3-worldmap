@@ -17,7 +17,8 @@ This HTML fragment:
   projection="naturalEarth"
   areas='[ "80abfffffffffff", "80e1fffffffffff", "80a5fffffffffff",
            "8035fffffffffff", "801ffffffffffff" ]'
-  geometry-src="land-50m.json" geometry-coll="land">
+  world-geometry-src="land-50m.json"
+  world-geometry-coll="land">
 </h3-worldmap>
 ```
 
