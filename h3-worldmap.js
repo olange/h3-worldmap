@@ -118,42 +118,22 @@ const spinnerViewFrag = (width, height) =>
   </g>`;
 
 const mapViewFrag = (width, height, that) => {
-  console.log( `mapViewFrag(): projFn ${that.projFn}`);
-  console.log( `mapViewFrag(): pathFn ${that.pathFn}`);
-  console.log( `mapViewFrag(): bsphereGeom ${that.bsphereGeom}`);
-  console.log( `mapViewFrag(): bsphereGeom path ${that.pathFn(that.bsphereGeom).slice(0, 50)} ...`);
-  console.log( `mapViewFrag(): outlineGeom ${H3Worldmap.outlineGeom}`);
-  console.log( `mapViewFrag(): outlineGeom path ${that.pathFn(H3Worldmap.outlineGeom).slice(0, 50)} ...`);
-
   return svg`<defs>
     <path id="outline" d="${that.pathFn(H3Worldmap.outlineGeom)}" />
     <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
   </defs>
   <g clip-path="#clip">
     <use xlink:href="#outline" class="sphere" />
+    <!-- <path d="${that.pathFn(that.graticuleGeom)}" class="graticule" /> -->
     <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
     <path d="${that.pathFn(that.land)}" class="land" />
     <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
     <path d="${that.pathFn(that.areasGeom)}" class="areas" />
   </g>
   <use xlink:href="#outline" class="outline" />`;
-  // <defs>
-  //   <path id="outline" d="${this.pathFn(H3Worldmap.outlineGeom)}" />
-  //   <clipPath id="clip"><use href="#outline" /></clipPath>
-  // </defs>
-  // <g clip-path="#clip">
-  //   <use href="#outline" class="sphere" />
-  //   <!-- <path d="${this.pathFn(this.graticuleGeom)}" class="graticule" /> -->
-  //   <path d="${this.pathFn(this.hexesGeom)}" class="hexes" />
-  //   <path d="${this.pathFn(land)}" class="land" />
-  //   <path d="${this.pathFn(this.bsphereGeom)}" class="bbox" />
-  //   <path d="${this.pathFn(this.areasGeom)}" class="areas" />
-  // </g>
-  // <use href="#outline" class="outline" />
 }
 
 const mapViewOrSpinner = (aspectRatio, that) => {
-  console.log("mapViewOrSpinner", that )
   const [ width, height ] =
     (aspectRatio === null)
       ? [ 100, 100 ]
@@ -284,7 +264,6 @@ export class H3Worldmap extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.fetchLandData();
-    console.log("H3Worldmap connectedCallback");
   }
 
   fetchLandData() {
@@ -294,19 +273,12 @@ export class H3Worldmap extends LitElement {
         if (!response.ok) {
             throw new Error('File not found');
         }
-        // const rj = response.json();
-        // console.log('fetchLandData response:', rj);
-        // return rj
         return response.json();
     })
     .then(world => {
-        console.log('fetchLandData world:', world);
         this.land = topojson.feature(world, world.objects.land);
-        console.log('fetchLandData land:', this.land);
     })
-    .catch((error) => {
-        console.error('fetchLandData error:', error);
-    });
+    .catch(error => { throw error; });
   }
 
   set areas( val) {
@@ -379,11 +351,9 @@ export class H3Worldmap extends LitElement {
   }
 
   get bsphereGeom() {
-    //console.log("bsphereGeom this.bbox", this.bbox);
     const { minLat, minLon, maxLat, maxLon } = this.bbox;
     const radius =
       Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
-    //console.log(radius, maxLat - minLat, maxLon - minLon);
     const geoCircle = d3.geoCircle().center(this.centroid).radius(radius);
     return geoCircle();
   }
@@ -452,7 +422,6 @@ export class H3Worldmap extends LitElement {
   }
 
   selectProjectionFn(e) {
-    console.log('select', e.target.value);
     this.projection = e.target.value;
   }
 }
