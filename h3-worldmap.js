@@ -6,8 +6,7 @@
 
 import { LitElement, html, svg, css } from 'lit';
 import * as d3 from 'd3';
-import { h3IsValid } from 'h3-js';
-import * as h3 from 'h3-js';
+import { h3IsValid, h3IsPentagon, h3ToGeoBoundary, getRes0Indexes } from 'h3-js';
 import * as topojson from 'topojson-client';
 
 // Utility functions
@@ -35,13 +34,13 @@ const hostStyles = css`
 // (actual size constraints should be set on host)
 const mapStyles = css`
   svg#map { width: 100%; height: 100%; }
-  .outline { fill: none; stroke: var(--secondary-color); }
+  .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.5; }
   .sphere { fill: var(--background-color); stroke: none; }
   .land { fill: var(--primary-color); stroke: none; }
   .graticule { fill: none; stroke: var(--secondary-color); }
   .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
-  .areas { fill: var(--areas-color); stroke: var(--highlight-color); }
-  .bbox { fill: none; stroke: var(--highlight-color); }`;
+  .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.5; }
+  .bbox { fill: none; stroke: var(--highlight-color); stroke-width: 0.5; }`;
 
 const infoStyles = css`
   div.info {
@@ -69,6 +68,7 @@ const spinnerStyles = css`
     animation: dash 1.5s ease-in-out infinite;
     stroke: var(--primary-color);
     stroke-linecap: round;
+    stroke-width: 2;
     fill: var(--background-color);
   }
 
@@ -76,7 +76,7 @@ const spinnerStyles = css`
     text-anchor: middle;
     dominant-baseline: middle;
   }
-  
+
   @keyframes rotate {
     100% { transform: rotate(360deg); }
   }
@@ -113,11 +113,11 @@ const projDefView = (projDef) =>
 
 const spinnerViewFrag = (width, height) =>
   svg`<g class="spinner">
-    <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" stroke-width="2" />
+    <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
     <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
   </g>`;
 
-const mapViewFrag = (width, height, that) => { 
+const mapViewFrag = (width, height, that) => {
   console.log( `mapViewFrag(): projFn ${that.projFn}`);
   console.log( `mapViewFrag(): pathFn ${that.pathFn}`);
   console.log( `mapViewFrag(): bsphereGeom ${that.bsphereGeom}`);
@@ -358,10 +358,10 @@ export class H3Worldmap extends LitElement {
       type: "FeatureCollection",
       features: this._areas.map((area) => ({
         type: "Feature",
-        properties: { id: area, pentagon: h3.h3IsPentagon(area) },
+        properties: { id: area, pentagon: h3IsPentagon(area) },
         geometry: {
           type: "Polygon",
-          coordinates: [h3.h3ToGeoBoundary(area, true).reverse()]
+          coordinates: [h3ToGeoBoundary(area, true).reverse()]
         }
       }))
     };
@@ -391,15 +391,15 @@ export class H3Worldmap extends LitElement {
   get hexesGeom() {
     return {
       type: "FeatureCollection",
-      features: h3.getRes0Indexes()
-        // .map( i => h3.h3ToChildren( i, level))
+      features: getRes0Indexes()
+        // .map( i => h3ToChildren( i, level))
         .flat()
         .map( d => ({
           type: "Feature",
-          properties: { id: d, pentagon: h3.h3IsPentagon(d) },
+          properties: { id: d, pentagon: h3IsPentagon(d) },
           geometry: {
             type: "Polygon",
-            coordinates: [ h3.h3ToGeoBoundary(d, true).reverse() ]
+            coordinates: [ h3ToGeoBoundary(d, true).reverse() ]
           }
         }))
     };
