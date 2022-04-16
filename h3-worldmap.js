@@ -117,33 +117,38 @@ const spinnerViewFrag = (width, height) =>
     <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
   </g>`;
 
-const mapViewFrag = (width, height, that) => {
+const mapViewFrag = (width, height, pathFn, hexesGeom, land, bsphereGeom, areasGeom) => {
   return svg`<defs>
-    <path id="outline" d="${that.pathFn(H3Worldmap.outlineGeom)}" />
+    <path id="outline" d="${pathFn(H3Worldmap.outlineGeom)}" />
     <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
   </defs>
   <g clip-path="#clip">
     <use xlink:href="#outline" class="sphere" />
-    <!-- <path d="${that.pathFn(that.graticuleGeom)}" class="graticule" /> -->
-    <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
-    <path d="${that.pathFn(that._land)}" class="land" />
-    <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
-    <path d="${that.pathFn(that.areasGeom)}" class="areas" />
+    <path d="${pathFn(hexesGeom)}" class="hexes" />
+    <path d="${pathFn(land)}" class="land" />
+    <path d="${pathFn(bsphereGeom)}" class="bbox" />
+    <path d="${pathFn(areasGeom)}" class="areas" /
   </g>
   <use xlink:href="#outline" class="outline" />`;
 }
 
-const mapViewOrSpinner = (aspectRatio, that) => {
+// <path d="${pathFn(graticuleGeom)}" class="graticule" /> // TODO ABOVE
+
+const sizeFrom = (aspectRatio) => {
   const [ width, height ] =
     (aspectRatio === null)
       ? [ 100, 100 ]
       : [ 100 * aspectRatio, 100 ];
-  [that._width, that._height] = [width, height];
+  return [ width, height ];
+}
+
+const mapViewOrSpinner = (aspectRatio, pathFn, hexesGeom, land, bsphereGeom, areasGeom) => {
+  const [ width, height ] = sizeFrom(aspectRatio);
   return svg`
     <svg id="map" viewBox="0 0 ${width} ${height}">
       ${aspectRatio === null
         ? spinnerViewFrag(width,height)
-        : mapViewFrag(width,height, that)}
+        : mapViewFrag(width, height, pathFn, hexesGeom, land, bsphereGeom, areasGeom)}
     </svg>`;
 }
 
@@ -278,9 +283,6 @@ export class H3Worldmap extends LitElement {
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
 
-    this._width = undefined;
-    this._height = undefined;
-
     this._land = undefined;
   }
 
@@ -330,7 +332,7 @@ export class H3Worldmap extends LitElement {
 
   get projFn() {
     const proj = this._projectionDef.ctorFn();
-    return proj.fitSize( [this._width, this._height], H3Worldmap.outlineGeom)
+    return proj.fitSize( sizeFrom(this._aspectRatio), H3Worldmap.outlineGeom)
                .rotate( this.centroid[ 1], this.centroid[ 0]);
   }
 
@@ -425,7 +427,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      mapViewOrSpinner(this._aspectRatio, this),
+      mapViewOrSpinner(this._aspectRatio, this.pathFn, this.hexesGeom, this.land, this.bsphereGeom, this.areasGeom),
       this.selectProjection(),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
