@@ -427,7 +427,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      mapViewOrSpinner(this._aspectRatio, this.pathFn, this.hexesGeom, this.land, this.bsphereGeom, this.areasGeom),
+      mapViewOrSpinner(this._aspectRatio, this.pathFn, this.hexesGeom, this._land, this.bsphereGeom, this.areasGeom),
       this.selectProjection(),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
