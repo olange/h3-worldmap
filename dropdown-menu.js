@@ -1,4 +1,9 @@
 /** @prettier */
+/**
+ * @license
+ * Copyright 2022 Olivier Lange & Rudi Farkas
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 
 import {LitElement, html, css} from 'lit';
 

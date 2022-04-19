@@ -8,40 +8,37 @@
 import {LitElement, html, svg, css} from 'lit';
 import {H3Worldmap} from './h3-worldmap';
 import {DropdownMenu} from './dropdown-menu';
-
-// 1 support for the creation and registration of listeners for <dropdown-menu> events
+import {AVAILABLE_PROJECTIONS} from './d3-available-projections.js';
 
 /**
- * AppRoot renders a dropdown menu.
- * The dropdownMenuProjections is configured here.
- * TODO: derive the options from AVAILABLE_PROJECTIONS,
- * which should be moved into a separate file.
+ * import AVAILABLE_PROJECTIONS and convert it to an object like this:
+ *  {
+ *    conicEqualArea: 'Conic Equal-Area',
+ *    orthographic: 'Orthographic',
+ *    naturalEarth: 'Natural Earth',
+ *    stereographic: 'Stereographic',
+ *    gnomonic: 'Gnomonic',
+ *    mercator: 'Mercator',
+ *  }
+ */
+const projectionOptions = Object.fromEntries(
+  [...AVAILABLE_PROJECTIONS.entries()].map((entry) => {
+    return [entry[0], entry[1].name];
+  })
+);
+
+/**
+ * configure the dropdown menu
  */
 const dropdownMenuProjections = {
   title: 'Projection:',
-  options: {
-    conicEqualArea: 'Conic Equal-Area',
-    orthographic: 'Orthographic',
-    naturalEarth: 'Natural Earth',
-    stereographic: 'Stereographic',
-    gnomonic: 'Gnomonic',
-    mercator: 'Mercator',
-  },
+  options: projectionOptions,
   eventid: 'menu-event',
 };
 
-// const AVAILABLE_PROJECTIONS = new Map([
-//   [ "conicEqualArea", { id: "conicEqualArea", name: "Conic equal-area", ctorFn: d3.geoConicEqualArea } ],
-//   [ "orthographic",   { id: "orthographic", name: "Orthographic", ctorFn: d3.geoOrthographic } ],
-//   [ "naturalEarth",   { id: "naturalEarth", name: "Natural Earth", ctorFn: d3.geoNaturalEarth1 } ],
-//   [ "stereographic",  { id: "stereographic", name: "Stereographic", ctorFn: d3.geoStereographic } ],
-//   [ "gnomonic",       { id: "gnomonic", name: "Gnomonic", ctorFn: d3.geoGnomonic } ],
-//   [ "mercator",       { id: "mercator", name: "Mercator", ctorFn: d3.geoMercator } ],
-//   // TODO: complete list from https://observablehq.com/@d3/projection-comparison
-// ]);
-
-// 2 the application root component
-
+/**
+ * The root class of the application.
+ */
 export class H3Root extends LitElement {
   static get styles() {
     return css`
@@ -105,7 +102,7 @@ export class H3Root extends LitElement {
         .eventid="${dropdownMenuProjections.eventid}"
         .label="${dropdownMenuProjections.title}"
         .options=${dropdownMenuProjections.options}
-        selected="${this._selectedProjection}"
+        .selected="${this._selectedProjection}"
       ></dropdown-menu>
     </div>`;
   }

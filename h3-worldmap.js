@@ -8,6 +8,7 @@ import { LitElement, html, svg, css } from 'lit';
 import * as d3 from 'd3';
 import { h3IsValid, h3IsPentagon, h3ToGeoBoundary, getRes0Indexes } from 'h3-js';
 import * as topojson from 'topojson-client';
+import {AVAILABLE_PROJECTIONS} from './d3-available-projections.js';
 
 // Utility functions
 
@@ -144,27 +145,6 @@ const mapViewOrSpinner = (aspectRatio, pathFn, hexesGeom, land, bsphereGeom, are
         : mapViewFrag(width, height, pathFn, hexesGeom, land, bsphereGeom, areasGeom)}
     </svg>`;
 }
-
-/**
- * Map of the projection identifiers, which are the possible values of the
- * 'projection' attribute of our custom element, with their corresponding
- * friendly name and D3 projection constructor function.
- *
- * It is (currently) a subset of projections we selected from the
- * [D3-geo](https://github.com/d3/d3-geo#projections) library.
- *
- * @constant
- * @default
- */
-const AVAILABLE_PROJECTIONS = new Map([
-  [ "conicEqualArea", { id: "conicEqualArea", name: "Conic equal-area", ctorFn: d3.geoConicEqualArea } ],
-  [ "orthographic",   { id: "orthographic", name: "Orthographic", ctorFn: d3.geoOrthographic } ],
-  [ "naturalEarth",   { id: "naturalEarth", name: "Natural Earth", ctorFn: d3.geoNaturalEarth1 } ],
-  [ "stereographic",  { id: "stereographic", name: "Stereographic", ctorFn: d3.geoStereographic } ],
-  [ "gnomonic",       { id: "gnomonic", name: "Gnomonic", ctorFn: d3.geoGnomonic } ],
-  [ "mercator",       { id: "mercator", name: "Mercator", ctorFn: d3.geoMercator } ],
-  // TODO: complete list from https://observablehq.com/@d3/projection-comparison
-]);
 
 /**
  * ‹h3-worldmap› custom element.
@@ -400,7 +380,7 @@ export class H3Worldmap extends LitElement {
 
   willUpdate(changedProperties) {
     if (changedProperties.has('projection')) {
-      this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
+      this._projectionDef = {id: this._projection, ...AVAILABLE_PROJECTIONS.get( this._projection)};
     }
     if (changedProperties.has('areas')) {
       this._uniqueAreas = removeDuplicates(this._areas);
