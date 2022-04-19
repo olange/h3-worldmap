@@ -21,7 +21,7 @@ const hostStyles = css`
   :host {
     height: 66vh;
     display: inline-block;
-    --primary-color: black;
+    //--primary-color: black;
     --secondary-color: #dddddd;
     --tertiary-color: #cccccc;
     --highlight-color: #990000;
@@ -50,13 +50,6 @@ const infoStyles = css`
   }
   div.info code {
     font-size: 1.3rem;
-  }`;
-
-const selectorStyles = css`
-  .select {
-    color: var(--primary-color);
-    font-size: 1.3rem;
-    padding: 5px;
   }`;
 
 const spinnerStyles = css`
@@ -196,7 +189,7 @@ const AVAILABLE_PROJECTIONS = new Map([
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, selectorStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -427,30 +420,10 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
+      html`</p>`,
       mapViewOrSpinner(this._aspectRatio, this.pathFn, this.hexesGeom, this._land, this.bsphereGeom, this.areasGeom),
-      this.selectProjection(),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
-  }
-
-  selectProjection() {
-    return html`
-      <div class="select">
-        <select name="myselect" id="myselect"  class="select" @change="${this.selectProjectionFn}">
-          <option value="" selected disabled hidden>Select projection</option>
-          <option value="orthographic">Orthographic</option>
-          <option value="naturalEarth">Natural Earth</option>
-          <option value="conicEqualArea">Conic equal-area</option>
-          <option value="stereographic">Stereographic</option>
-          <option value="gnomonic">Gnomonic</option>
-          <option value="mercator">Mercator</option>
-        </select>
-      </div>
-    `;
-  }
-
-  selectProjectionFn(e) {
-    this.projection = e.target.value;
   }
 }
 

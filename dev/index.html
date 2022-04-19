@@ -7,9 +7,10 @@
     <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="../node_modules/lit/polyfill-support.js"></script>
     <script type="module" src="../h3-worldmap.js"></script>
+    <script type="module" src="../h3-root.js"></script>
     <style>
       body { font-family: 'Georgia'; font-size: 1rem; }
-      h3-worldmap {
+      h3-worldmap, h3-root {
         --primary-color: indigo; }
       p {
         border: solid 2px lightgray;
@@ -17,14 +18,8 @@
     </style>
   </head>
   <body>
-    <h3-worldmap
-      projection='naturalEarth'
-      areas='[
-        "80abfffffffffff", "80e1fffffffffff", "80a5fffffffffff",
-        "8035fffffffffff", "801ffffffffffff"
-      ]'
-      geometry-src="land-50m.json" geometry-coll="land">
-      <p>This is child content</p>
-    </h3-worldmap>
+    <divstyle="border: thin solid red"> 
+      <h3-root></h3-root>
+    </div>
   </body>
 </html>
