@@ -95,55 +95,56 @@ const spinnerStyles = css`
 
 // Template fragments
 
-const infoBoxView = (areas, projDef) =>
-  html`<div class="info">
+function infoBoxView(areas, projDef) {
+  return html`<div class="info">
     ${areasView(areas)}<br>
     ${projDefView(projDef)}
     <slot></slot>
   </div>`;
+}
 
-const areasView = (areas) =>
-  html`Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
+function areasView(areas) {
+  return html`Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
     (area,i) =>
       html`${i > 0 ? ', ' : ''}<code>${area}</code>`)}</strong> ]`;
+}
 
-const projDefView = (projDef) =>
-  html`<strong>${projDef?.name}</strong>
+function projDefView(projDef) {
+  return html`<strong>${projDef?.name}</strong>
     projection (<code>${projDef?.id}</code>)`;
+}
 
-const spinnerViewFrag = (width, height) =>
-  svg`<g class="spinner">
+function spinnerViewFrag(viewBoxSize) {
+  const [ width, height ] = viewBoxSize;
+  return svg`<g class="spinner">
     <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
     <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
   </g>`;
+}
 
-const mapViewFrag = (width, height, that) => {
+function mapViewFrag(pathFn, geometries) {
   return svg`<defs>
-    <path id="outline" d="${that.pathFn(H3Worldmap.outlineGeom)}" />
+    <path id="outline" d="${pathFn(geometries.outline)}" />
     <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
   </defs>
   <g clip-path="#clip">
     <use xlink:href="#outline" class="sphere" />
-    <!-- <path d="${that.pathFn(that.graticuleGeom)}" class="graticule" /> -->
-    <path d="${that.pathFn(that.hexesGeom)}" class="hexes" />
-    <path d="${that.pathFn(that._worldGeom)}" class="land" />
-    <path d="${that.pathFn(that.bsphereGeom)}" class="bbox" />
-    <path d="${that.pathFn(that.areasGeom)}" class="areas" />
+    <!-- <path d="${pathFn(geometries.graticule)}" class="graticule" /> -->
+    <path d="${pathFn(geometries.hexes)}" class="hexes" />
+    <path d="${pathFn(geometries.world)}" class="land" />
+    <path d="${pathFn(geometries.bsphere)}" class="bbox" />
+    <path d="${pathFn(geometries.areas)}" class="areas" />
   </g>
   <use xlink:href="#outline" class="outline" />`;
 }
 
-const mapViewOrSpinner = (aspectRatio, that) => {
-  const [ width, height ] =
-    (aspectRatio === null)
-      ? [ 100, 100 ]
-      : [ 100 * aspectRatio, 100 ];
-  [that._width, that._height] = [width, height];
+function mapViewOrSpinner(isLoading, viewBoxSize, pathFn, geometries) {
+  const [ width, height ] = viewBoxSize;
   return svg`
     <svg id="map" viewBox="0 0 ${width} ${height}">
-      ${aspectRatio === null
-        ? spinnerViewFrag(width,height)
-        : mapViewFrag(width,height, that)}
+      ${isLoading
+        ? spinnerViewFrag(viewBoxSize)
+        : mapViewFrag(pathFn, geometries)}
     </svg>`;
 }
 
@@ -285,9 +286,6 @@ export class H3Worldmap extends LitElement {
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
 
-    this._width = undefined;
-    this._height = undefined;
-
     this._worldGeom = undefined;
   }
 
@@ -335,9 +333,17 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
+  get viewBoxsize() {
+    return (this._aspectRatio === null)
+      ? [ 100, 100 ]
+      : [ 100 * this._aspectRatio, 100 ];
+  }
+
   get projFn() {
-    const proj = this._projectionDef.ctorFn();
-    return proj.fitSize( [this._width, this._height], H3Worldmap.outlineGeom)
+    const proj = this._projectionDef.ctorFn(),
+          viewBoxSize = this.viewBoxsize,
+          outlineGeom = H3Worldmap.outlineGeom;
+    return proj.fitSize( viewBoxSize, outlineGeom)
                .rotate( this.centroid[ 1], this.centroid[ 0]);
   }
 
@@ -433,8 +439,19 @@ export class H3Worldmap extends LitElement {
   }
 
   render() {
+    const isLoading = this._aspectRatio === null || this._worldGeom === null,
+      viewBoxsize = this.viewBoxsize,
+      pathFn = this.pathFn,
+      geometries = {
+        outline: H3Worldmap.outlineGeom,
+        graticule: null,
+        hexes: this.hexesGeom,
+        world: this._worldGeom,
+        bsphere: this.bsphereGeom,
+        areas: this.areasGeom
+      };
     return [
-      mapViewOrSpinner(this._aspectRatio, this),
+      mapViewOrSpinner(isLoading, viewBoxsize, pathFn, geometries),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
