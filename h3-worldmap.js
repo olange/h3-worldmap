@@ -400,29 +400,8 @@ export class H3Worldmap extends LitElement {
   render() {
     return [
       mapViewOrSpinner(this._aspectRatio, this),
-      this.selectProjection(),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
-  }
-
-  selectProjection() {
-    return html`
-      <div class="select">
-        <select name="myselect" id="myselect"  class="select" @change="${this.selectProjectionFn}">
-          <option value="" selected disabled hidden>Select projection</option>
-          <option value="orthographic">Orthographic</option>
-          <option value="naturalEarth">Natural Earth</option>
-          <option value="conicEqualArea">Conic equal-area</option>
-          <option value="stereographic">Stereographic</option>
-          <option value="gnomonic">Gnomonic</option>
-          <option value="mercator">Mercator</option>
-        </select>
-      </div>
-    `;
-  }
-
-  selectProjectionFn(e) {
-    this.projection = e.target.value;
   }
 }
 
