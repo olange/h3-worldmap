@@ -270,7 +270,7 @@ export class H3Worldmap extends LitElement {
     }
   }
 
-  get _SVGElement() {
+  _SVGElement() {
     return this.renderRoot?.querySelector('svg#map') ?? null;
   }
 
@@ -289,7 +289,7 @@ export class H3Worldmap extends LitElement {
 
   _measureSVGElement() {
     return requestAnimationFrame(() => {
-      this._svgClientRect = this._SVGElement.getBoundingClientRect();
+      this._svgClientRect = this._SVGElement().getBoundingClientRect();
     });
   }
 
