@@ -37,13 +37,13 @@ const hostStyles = css`
 // (actual size constraints should be set on host)
 const mapStyles = css`
   svg#map { width: 100%; height: 100%; }
-  .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.5; }
+  .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.25%; }
   .sphere { fill: var(--background-color); stroke: none; }
-  .land { fill: none; stroke: var(--primary-color); stroke-width: 0.35; }
+  .land { fill: none; stroke: var(--primary-color); stroke-width: 0.15%; }
   .graticule { fill: none; stroke: var(--secondary-color); }
-  .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.35; }
-  .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.5; }
-  .bbox { fill: none; stroke: var(--highlight-color); stroke-width: 0.5; }`;
+  .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.10%; }
+  .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.25%; }
+  .bbox { fill: none; stroke: var(--highlight-color); stroke-width: 0.25%; }`;
 
 const infoStyles = css`
   div.info {
@@ -56,21 +56,16 @@ const infoStyles = css`
   }`;
 
 const spinnerStyles = css`
-  g.spinner {
+  .spinner {
     animation: rotate 2s linear infinite;
   }
 
-  g.spinner > circle {
+  .spinner circle {
     animation: dash 1.5s ease-in-out infinite;
     stroke: var(--primary-color);
     stroke-linecap: round;
     stroke-width: 2;
     fill: var(--background-color);
-  }
-
-  g.spinner > text {
-    text-anchor: middle;
-    dominant-baseline: middle;
   }
 
   @keyframes rotate {
@@ -110,38 +105,31 @@ function projDefView(projDef) {
     projection (<code>${projDef?.id}</code>)`;
 }
 
-function spinnerViewFrag(viewBoxSize) {
-  const [ width, height ] = viewBoxSize;
-  return svg`<g class="spinner">
-    <circle cx="${width/2}" cy="${height/2}" r="${(height-2)/2}" />
-    <text x="${width/2}" y="${height/2}" class="spinner">Loading…</text>
-  </g>`;
+function spinnerViewFrag() {
+  // Important: id="map" must match the id used in `_SVGElement()`,
+  return svg`<svg id="map" viewBox="0 0 50 50" class="spinner">
+    <circle class="path" cx="25" cy="25" r="20" />
+  </svg>`;
 }
 
-function mapViewFrag(pathFn, geometries) {
-  return svg`<defs>
-    <path id="outline" d="${pathFn(geometries.outline)}" />
-    <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
-  </defs>
-  <g clip-path="#clip">
-    <use xlink:href="#outline" class="sphere" />
-    <!-- <path d="${pathFn(geometries.graticule)}" class="graticule" /> -->
-    <path d="${pathFn(geometries.hexes)}" class="hexes" />
-    <path d="${pathFn(geometries.world)}" class="land" />
-    <path d="${pathFn(geometries.bsphere)}" class="bbox" />
-    <path d="${pathFn(geometries.areas)}" class="areas" />
-  </g>
-  <use xlink:href="#outline" class="outline" />`;
-}
-
-function mapViewOrSpinner(isLoading, viewBoxSize, pathFn, geometries) {
+function mapViewFrag(viewBoxSize, pathFn, geometries) {
+  // Important: id="map" must match the id used in `_SVGElement()`,
   const [ width, height ] = viewBoxSize;
-  return svg`
-    <svg id="map" viewBox="0 0 ${width} ${height}">
-      ${isLoading
-        ? spinnerViewFrag(viewBoxSize)
-        : mapViewFrag(pathFn, geometries)}
-    </svg>`;
+  return svg`<svg id="map" viewBox="0 0 ${width} ${height}">
+    <defs>
+      <path id="outline" d="${pathFn(geometries.outline)}" />
+      <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
+    </defs>
+    <g clip-path="#clip">
+      <use xlink:href="#outline" class="sphere" />
+      <!-- <path d="${pathFn(geometries.graticule)}" class="graticule" /> -->
+      <path d="${pathFn(geometries.hexes)}" class="hexes" />
+      <path d="${pathFn(geometries.world)}" class="land" />
+      <path d="${pathFn(geometries.bsphere)}" class="bbox" />
+      <path d="${pathFn(geometries.areas)}" class="areas" />
+    </g>
+    <use xlink:href="#outline" class="outline" />
+  </svg>`;
 }
 
 /**
@@ -188,7 +176,7 @@ const AVAILABLE_PROJECTIONS = new Map([
  */
 export class H3Worldmap extends LitElement {
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, selectorStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -332,8 +320,7 @@ export class H3Worldmap extends LitElement {
   get viewBoxsize() {
     // Returns width and height of the SVG viewbox space, which is used to
     // configure the D3-geo projection to produce coordinates in this space
-    return (this._svgClientRect === null)
-      ? [ 100, 100 ]
+    return (this._svgClientRect === null)? null
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
@@ -449,7 +436,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      mapViewOrSpinner(this.isLoading, this.viewBoxsize, this.pathFn, this.geometries()),
+      this.isLoading ? spinnerViewFrag() : mapViewFrag(this.viewBoxsize, this.pathFn, this.geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
