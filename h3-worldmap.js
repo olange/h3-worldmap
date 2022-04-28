@@ -8,7 +8,7 @@ import { LitElement, html, svg, css } from 'lit';
 
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
-import { h3IsValid, h3IsPentagon, h3ToGeoBoundary, getRes0Indexes } from 'h3-js';
+import { h3IsValid } from 'h3-js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -17,6 +17,7 @@ import { infoBoxView, infoStyles } from './src/views/infobox.js';
 
 import { AVAILABLE_PROJECTIONS } from './src/defs/projections.js';
 import { PROPS_DEFAULTS } from './src/defs/defaults.js';
+import * as geometries from './src/core/geometries.js';
 
 // Utility functions
 
@@ -194,80 +195,28 @@ export class H3Worldmap extends LitElement {
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
-  outlineGeom() {
-    return { type: "Sphere" };
-  }
-
-  areasGeom() {
-    return {
-      type: "FeatureCollection",
-      features: this._areas.map((area) => ({
-        type: "Feature",
-        properties: { id: area, pentagon: h3IsPentagon(area) },
-        geometry: {
-          type: "Polygon",
-          coordinates: [h3ToGeoBoundary(area, true).reverse()]
-        }
-      }))
-    };
-  }
-
-  centroid() {
-    return d3.geoCentroid(this.areasGeom());
-  }
-
-  bbox() {
-    const [[minLon, minLat], [maxLon, maxLat]] = d3.geoBounds(
-      this.areasGeom()
-    );
-    return { minLat, minLon, maxLat, maxLon };
-  }
-
-  bsphereGeom() {
-    const { minLat, minLon, maxLat, maxLon } = this.bbox();
-    const radius =
-      Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
-    const geoCircle = d3.geoCircle().center(this.centroid()).radius(radius);
-    return geoCircle();
-  }
-
-  hexesGeom() {
-    return {
-      type: "FeatureCollection",
-      features: getRes0Indexes()
-        // .map( i => h3ToChildren( i, level))
-        .flat()
-        .map( d => ({
-          type: "Feature",
-          properties: { id: d, pentagon: h3IsPentagon(d) },
-          geometry: {
-            type: "Polygon",
-            coordinates: [ h3ToGeoBoundary(d, true).reverse() ]
-          }
-        }))
-    };
-  }
-
-  projFn() {
-    const proj = this._projectionDef.ctorFn(),
-      centroid = this.centroid();
-    return proj.fitSize( this._viewBoxSize(), this.outlineGeom())
-               .rotate( centroid[ 1], centroid[ 0]);
-  }
-
-  pathFn() {
-    return d3.geoPath( this.projFn());
-  }
-
   _geometries() {
+    const areasGeom = geometries.areasGeom(this._areas);
     return {
-      outline: this.outlineGeom(),
+      outline: geometries.outlineGeom(),
       graticule: null,
-      hexes: this.hexesGeom(),
+      hexes: geometries.hexesGeom(),
       world: this._worldGeom,
-      bsphere: this.bsphereGeom(),
-      areas: this.areasGeom()
+      bsphere: geometries.bsphereGeom(areasGeom),
+      areas: areasGeom
     }
+  }
+
+  _buildProjFn(projDef) {
+    const projFn = projDef.ctorFn(), // create an instance of the projection function from its builder
+        centroid = geometries.centroid();
+    return projFn.fitSize( this._viewBoxSize(), geometries.outlineGeom())
+                 .rotate( centroid[ 1], centroid[ 0]);
+  }
+
+  _geoPathFn() {
+    const projFn = this._buildProjFn(this._projectionDef);
+    return d3.geoPath( projFn);
   }
 
   _SVGElement() {
@@ -315,7 +264,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn(), this._geometries()),
+      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
