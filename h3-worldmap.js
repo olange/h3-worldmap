@@ -52,13 +52,6 @@ const infoStyles = css`
     font-size: 1.3rem;
   }`;
 
-const selectorStyles = css`
-  .select {
-    color: var(--primary-color);
-    font-size: 1.3rem;
-    padding: 5px;
-  }`;
-
 const spinnerStyles = css`
   g.spinner {
     animation: rotate 2s linear infinite;
