@@ -258,7 +258,7 @@ export class H3Worldmap extends LitElement {
     return d3.geoPath( this.projFn);
   }
 
-  get geometries() {
+  _geometries() {
     return {
       outline: this.outlineGeom,
       graticule: null,
@@ -314,7 +314,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn, this.geometries),
+      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn, this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
