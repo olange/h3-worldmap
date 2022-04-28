@@ -20,6 +20,7 @@ function removeDuplicates( arr) {
 const hostStyles = css`
   :host {
     height: 66vh;
+    box-sizing: border-box;
     display: inline-block;
     --primary-color: black;
     --secondary-color: #dddddd;
@@ -28,7 +29,9 @@ const hostStyles = css`
     --areas-color: #cc0000cc;
     --bounding-box-color: #ddddddcc;
     --background-color: white;
-  }`;
+  }
+
+  svg, div { box-sizing: inherit }`;
 
 // SVG element will use all available space, but no more
 // (actual size constraints should be set on host)
@@ -257,9 +260,9 @@ export class H3Worldmap extends LitElement {
        * 3. which will finally trigger a re-render of the SVG element
        *    by Lit, with the correct aspect ratio being available.
        *
-       * @type {number}
+       * @type {object}
        */
-      _aspectRatio: { type: Number, state: true },
+      _svgClientRect: { type: Object, state: true },
     };
   }
 
@@ -273,8 +276,8 @@ export class H3Worldmap extends LitElement {
     this.worldGeometryColl = "land";
 
     // Internal state properties (observed by Lit)
-    this._aspectRatio = null;             // width/height of SVG Element, computed after first paint
-    this._worldGeom = undefined;
+    this._svgClientRect = null;          // computed after first paint
+    this._worldGeom = undefined;          // defined once the TOPOJson world geometry has loaded
 
     // Internal private properties (derived, not observed)
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
@@ -327,13 +330,15 @@ export class H3Worldmap extends LitElement {
   }
 
   get viewBoxsize() {
-    return (this._aspectRatio === null)
+    // Returns width and height of the SVG viewbox space, which is used to
+    // configure the D3-geo projection to produce coordinates in this space
+    return (this._svgClientRect === null)
       ? [ 100, 100 ]
-      : [ 100 * this._aspectRatio, 100 ];
+      : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
   get isLoading() {
-    return this._aspectRatio === null
+    return this._svgClientRect === null
            || this._worldGeom === null;
   }
 
@@ -407,8 +412,7 @@ export class H3Worldmap extends LitElement {
 
   _measureSVGElement() {
     return requestAnimationFrame(() => {
-      const clientRect = this._SVGElement.getBoundingClientRect();
-      this._aspectRatio = clientRect.width / clientRect.height;
+      this._svgClientRect = this._SVGElement.getBoundingClientRect();
     });
   }
 
@@ -427,7 +431,7 @@ export class H3Worldmap extends LitElement {
     // worldGeometrySrc|Coll properties change
     this.fetchLandData();
 
-    if (this._aspectRatio === null) {
+    if (this._svgClientRect === null) {
       this._measureSVGElement();
     }
   }
