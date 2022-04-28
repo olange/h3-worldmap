@@ -194,11 +194,11 @@ export class H3Worldmap extends LitElement {
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
-  get outlineGeom() {
+  outlineGeom() {
     return { type: "Sphere" };
   }
 
-  get areasGeom() {
+  areasGeom() {
     return {
       type: "FeatureCollection",
       features: this._areas.map((area) => ({
@@ -212,26 +212,26 @@ export class H3Worldmap extends LitElement {
     };
   }
 
-  get centroid() {
-    return d3.geoCentroid(this.areasGeom);
+  centroid() {
+    return d3.geoCentroid(this.areasGeom());
   }
 
-  get bbox() {
+  bbox() {
     const [[minLon, minLat], [maxLon, maxLat]] = d3.geoBounds(
-      this.areasGeom
+      this.areasGeom()
     );
     return { minLat, minLon, maxLat, maxLon };
   }
 
-  get bsphereGeom() {
-    const { minLat, minLon, maxLat, maxLon } = this.bbox;
+  bsphereGeom() {
+    const { minLat, minLon, maxLat, maxLon } = this.bbox();
     const radius =
       Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
-    const geoCircle = d3.geoCircle().center(this.centroid).radius(radius);
+    const geoCircle = d3.geoCircle().center(this.centroid()).radius(radius);
     return geoCircle();
   }
 
-  get hexesGeom() {
+  hexesGeom() {
     return {
       type: "FeatureCollection",
       features: getRes0Indexes()
@@ -249,9 +249,10 @@ export class H3Worldmap extends LitElement {
   }
 
   get projFn() {
-    const proj = this._projectionDef.ctorFn();
-    return proj.fitSize( this._viewBoxSize(), this.outlineGeom)
-               .rotate( this.centroid[ 1], this.centroid[ 0]);
+    const proj = this._projectionDef.ctorFn(),
+      centroid = this.centroid();
+    return proj.fitSize( this._viewBoxSize(), this.outlineGeom())
+               .rotate( centroid[ 1], centroid[ 0]);
   }
 
   get pathFn() {
@@ -260,12 +261,12 @@ export class H3Worldmap extends LitElement {
 
   _geometries() {
     return {
-      outline: this.outlineGeom,
+      outline: this.outlineGeom(),
       graticule: null,
-      hexes: this.hexesGeom,
+      hexes: this.hexesGeom(),
       world: this._worldGeom,
-      bsphere: this.bsphereGeom,
-      areas: this.areasGeom
+      bsphere: this.bsphereGeom(),
+      areas: this.areasGeom()
     }
   }
 
