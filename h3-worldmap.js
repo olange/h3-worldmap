@@ -194,11 +194,6 @@ export class H3Worldmap extends LitElement {
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
-  get isLoading() {
-    return this._svgClientRect === null
-           || this._worldGeom === null;
-  }
-
   get outlineGeom() {
     return { type: "Sphere" };
   }
@@ -267,6 +262,19 @@ export class H3Worldmap extends LitElement {
     return this.renderRoot?.querySelector('svg#map') ?? null;
   }
 
+  _hasMeasuredSVGSize() {
+    return this._svgClientRect !== null;
+  }
+
+  _hasLoadedWorldGeom() {
+    return this._worldGeom !== null;
+  }
+
+  _isLoading() {
+    return !( this._hasMeasuredSVGSize()
+           && this._hasLoadedWorldGeom());
+  }
+
   _measureSVGElement() {
     return requestAnimationFrame(() => {
       this._svgClientRect = this._SVGElement.getBoundingClientRect();
@@ -306,7 +314,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this.isLoading ? spinnerView() : mapView(this.viewBoxsize, this.pathFn, this.geometries()),
+      this._isLoading() ? spinnerView() : mapView(this.viewBoxsize, this.pathFn, this.geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
