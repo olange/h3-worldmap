@@ -281,12 +281,12 @@ export class H3Worldmap extends LitElement {
 
     // Internal state properties (observed by Lit)
     this._aspectRatio = null;             // width/height of SVG Element, computed after first paint
+    this._worldGeom = undefined;
 
     // Internal private properties (derived, not observed)
     this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
 
-    this._worldGeom = undefined;
   }
 
   async fetchLandData() {
@@ -337,6 +337,11 @@ export class H3Worldmap extends LitElement {
     return (this._aspectRatio === null)
       ? [ 100, 100 ]
       : [ 100 * this._aspectRatio, 100 ];
+  }
+
+  get isLoading() {
+    return this._aspectRatio === null
+           || this._worldGeom === null;
   }
 
   get projFn() {
@@ -427,8 +432,6 @@ export class H3Worldmap extends LitElement {
 
   firstUpdated() {
     // TODO: we should not ignore the promise returned
-    // TODO: the spinner should remain as long as we have
-    // not loaded the TopoJSON file
     // TODO: world geometry should be reloaded when
     // worldGeometrySrc|Coll properties change
     this.fetchLandData();
@@ -439,10 +442,7 @@ export class H3Worldmap extends LitElement {
   }
 
   render() {
-    const isLoading = this._aspectRatio === null || this._worldGeom === null,
-      viewBoxsize = this.viewBoxsize,
-      pathFn = this.pathFn,
-      geometries = {
+    const geometries = {
         outline: H3Worldmap.outlineGeom,
         graticule: null,
         hexes: this.hexesGeom,
@@ -451,7 +451,7 @@ export class H3Worldmap extends LitElement {
         areas: this.areasGeom
       };
     return [
-      mapViewOrSpinner(isLoading, viewBoxsize, pathFn, geometries),
+      mapViewOrSpinner(this.isLoading, this.viewBoxsize, this.pathFn, geometries),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
