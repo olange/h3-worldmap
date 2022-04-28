@@ -5,153 +5,25 @@
  */
 
 import { LitElement, html, svg, css } from 'lit';
+
 import * as d3 from 'd3';
-import { h3IsValid, h3IsPentagon, h3ToGeoBoundary, getRes0Indexes } from 'h3-js';
 import * as topojson from 'topojson-client';
+import { h3IsValid } from 'h3-js';
+
+import { hostStyles } from './src/views/host.js';
+import { mapView, mapStyles } from './src/views/map.js';
+import { spinnerView, spinnerStyles } from './src/views/spinner.js';
+import { infoBoxView, infoStyles } from './src/views/infobox.js';
+
+import { AVAILABLE_PROJECTIONS } from './src/defs/projections.js';
+import { PROPS_DEFAULTS } from './src/defs/defaults.js';
+import * as geometries from './src/core/geometries.js';
 
 // Utility functions
 
 function removeDuplicates( arr) {
   return [...new Set(arr)];
 }
-
-// Styles
-
-const hostStyles = css`
-  :host {
-    height: 66vh;
-    box-sizing: border-box;
-    display: inline-block;
-    --primary-color: black;
-    --secondary-color: #dddddd;
-    --tertiary-color: #cccccc;
-    --highlight-color: #990000;
-    --areas-color: #cc0000cc;
-    --bounding-box-color: #ddddddcc;
-    --background-color: white;
-  }
-
-  svg, div { box-sizing: inherit }`;
-
-// SVG element will use all available space, but no more
-// (actual size constraints should be set on host)
-const mapStyles = css`
-  svg#map { width: 100%; height: 100%; }
-  .outline { fill: none; stroke: var(--secondary-color); stroke-width: 0.25%; }
-  .sphere { fill: var(--background-color); stroke: none; }
-  .land { fill: none; stroke: var(--primary-color); stroke-width: 0.15%; }
-  .graticule { fill: none; stroke: var(--secondary-color); }
-  .hexes { fill: none; stroke: var(--tertiary-color); stroke-width: 0.10%; }
-  .areas { fill: var(--areas-color); stroke: var(--highlight-color); stroke-width: 0.25%; }
-  .bbox { fill: none; stroke: var(--highlight-color); stroke-width: 0.25%; }`;
-
-const infoStyles = css`
-  div.info {
-    color: var(--primary-color);
-    border: 3px solid var(--primary-color); border-radius: 1.5rem;
-    padding: 1rem 1.5rem;
-  }
-  div.info code {
-    font-size: 1.3rem;
-  }`;
-
-const spinnerStyles = css`
-  .spinner {
-    animation: rotate 2s linear infinite;
-  }
-
-  .spinner circle {
-    animation: dash 1.5s ease-in-out infinite;
-    stroke: var(--primary-color);
-    stroke-linecap: round;
-    stroke-width: 2;
-    fill: var(--background-color);
-  }
-
-  @keyframes rotate {
-    100% { transform: rotate(360deg); }
-  }
-
-  @keyframes dash {
-    0% {
-      stroke-dasharray: 1, 150;
-      stroke-dashoffset: 0; }
-    50% {
-      stroke-dasharray: 90, 150;
-      stroke-dashoffset: -35; }
-    100% {
-      stroke-dasharray: 90, 150;
-      stroke-dashoffset: -124; }
-  }`;
-
-// Template fragments
-
-function infoBoxView(areas, projDef) {
-  return html`<div class="info">
-    ${areasView(areas)}<br>
-    ${projDefView(projDef)}
-    <slot></slot>
-  </div>`;
-}
-
-function areasView(areas) {
-  return html`Areas (<em>H3-indexes</em>): [ <strong>${areas?.map(
-    (area,i) =>
-      html`${i > 0 ? ', ' : ''}<code>${area}</code>`)}</strong> ]`;
-}
-
-function projDefView(projDef) {
-  return html`<strong>${projDef?.name}</strong>
-    projection (<code>${projDef?.id}</code>)`;
-}
-
-function spinnerView() {
-  // Important: id="map" must match the id used in `_SVGElement()`,
-  return svg`<svg id="map" viewBox="0 0 50 50" class="spinner">
-    <circle class="path" cx="25" cy="25" r="20" />
-  </svg>`;
-}
-
-function mapView(viewBoxSize, pathFn, geometries) {
-  // Important: id="map" must match the id used in `_SVGElement()`,
-  const [ width, height ] = viewBoxSize;
-  return svg`<svg id="map" viewBox="0 0 ${width} ${height}">
-    <defs>
-      <path id="outline" d="${pathFn(geometries.outline)}" />
-      <clipPath id="clip"><use xlink:href="#outline"/></clipPath>
-    </defs>
-    <g clip-path="#clip">
-      <use xlink:href="#outline" class="sphere" />
-      <!-- <path d="${pathFn(geometries.graticule)}" class="graticule" /> -->
-      <path d="${pathFn(geometries.hexes)}" class="hexes" />
-      <path d="${pathFn(geometries.world)}" class="land" />
-      <path d="${pathFn(geometries.bsphere)}" class="bbox" />
-      <path d="${pathFn(geometries.areas)}" class="areas" />
-    </g>
-    <use xlink:href="#outline" class="outline" />
-  </svg>`;
-}
-
-/**
- * Map of the projection identifiers, which are the possible values of the
- * 'projection' attribute of our custom element, with their corresponding
- * friendly name and D3 projection constructor function.
- *
- * It is (currently) a subset of projections we selected from the
- * [D3-geo](https://github.com/d3/d3-geo#projections) library.
- *
- * @constant
- * @default
- */
-const AVAILABLE_PROJECTIONS = new Map([
-  [ "conicEqualArea", { id: "conicEqualArea", name: "Conic equal-area", ctorFn: d3.geoConicEqualArea } ],
-  [ "orthographic",   { id: "orthographic", name: "Orthographic", ctorFn: d3.geoOrthographic } ],
-  [ "naturalEarth",   { id: "naturalEarth", name: "Natural Earth", ctorFn: d3.geoNaturalEarth1 } ],
-  [ "stereographic",  { id: "stereographic", name: "Stereographic", ctorFn: d3.geoStereographic } ],
-  [ "gnomonic",       { id: "gnomonic", name: "Gnomonic", ctorFn: d3.geoGnomonic } ],
-  [ "mercator",       { id: "mercator", name: "Mercator", ctorFn: d3.geoMercator } ],
-  // TODO: complete list from https://observablehq.com/@d3/projection-comparison
-]);
 
 /**
  * ‹h3-worldmap› custom element.
@@ -258,22 +130,21 @@ export class H3Worldmap extends LitElement {
     super();
 
     // Public attributes/properties (observed by Lit)
-    this.projection = "orthographic";    // will trigger its property setter
-    this.areas = [];                     // will trigger its property setter
-    this.worldGeometrySrc = "https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json";
-    this.worldGeometryColl = "land";
+    this.projection = PROPS_DEFAULTS.PROJECTION; // will trigger its property setter
+    this.areas = []; // will trigger its property setter
+    this.worldGeometrySrc = PROPS_DEFAULTS.WORLD_GEOMETRY_SRC;
+    this.worldGeometryColl = PROPS_DEFAULTS.WORLD_GEOMETRY_COLL;
 
     // Internal state properties (observed by Lit)
-    this._svgClientRect = null;          // computed after first paint
-    this._worldGeom = undefined;          // defined once the TOPOJson world geometry has loaded
+    this._svgClientRect = null; // computed after first paint
+    this._worldGeom = undefined; // defined once the TOPOJson world geometry has loaded
 
     // Internal private properties (derived, not observed)
-    this._uniqueAreas = null;            // computed from `this._areas` (see `willUpdate()`)
-    this._projectionDef = null;          // computed from `this._projection` (see `willUpdate()`)
-
+    this._uniqueAreas = null;   // computed from `this._areas` (see `willUpdate()`)
+    this._projectionDef = null; // computed from `this._projection` (see `willUpdate()`)
   }
 
-  async fetchLandData() {
+  async _fetchWorldGeometry() {
     return fetch(this.worldGeometrySrc)
       .then(response => {
         if (!response.ok) {
@@ -317,89 +188,57 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
-  get viewBoxsize() {
+  _viewBoxSize() {
     // Returns width and height of the SVG viewbox space, which is used to
     // configure the D3-geo projection to produce coordinates in this space
-    return (this._svgClientRect === null)? null
+    return (this._svgClientRect === null) ? null
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
-  get isLoading() {
-    return this._svgClientRect === null
-           || this._worldGeom === null;
-  }
-
-  get outlineGeom() {
-    return { type: "Sphere" };
-  }
-
-  get areasGeom() {
+  _geometries() {
+    const areasGeom = geometries.areasGeom(this._areas);
     return {
-      type: "FeatureCollection",
-      features: this._areas.map((area) => ({
-        type: "Feature",
-        properties: { id: area, pentagon: h3IsPentagon(area) },
-        geometry: {
-          type: "Polygon",
-          coordinates: [h3ToGeoBoundary(area, true).reverse()]
-        }
-      }))
-    };
+      outline: geometries.outlineGeom(),
+      graticule: null,
+      hexes: geometries.hexesGeom(),
+      world: this._worldGeom,
+      bsphere: geometries.bsphereGeom(areasGeom),
+      areas: areasGeom
+    }
   }
 
-  get centroid() {
-    return d3.geoCentroid(this.areasGeom);
+  _buildProjFn(projDef) {
+    const projFn = projDef.ctorFn(), // create an instance of the projection function from its builder
+        centroid = geometries.centroid();
+    return projFn.fitSize( this._viewBoxSize(), geometries.outlineGeom())
+                 .rotate( centroid[ 1], centroid[ 0]);
   }
 
-  get bbox() {
-    const [[minLon, minLat], [maxLon, maxLat]] = d3.geoBounds(
-      this.areasGeom
-    );
-    return { minLat, minLon, maxLat, maxLon };
+  _geoPathFn() {
+    const projFn = this._buildProjFn(this._projectionDef);
+    return d3.geoPath( projFn);
   }
 
-  get bsphereGeom() {
-    const { minLat, minLon, maxLat, maxLon } = this.bbox;
-    const radius =
-      Math.max(Math.abs(maxLat - minLat), Math.abs(maxLon - minLon)) / 1.9;
-    const geoCircle = d3.geoCircle().center(this.centroid).radius(radius);
-    return geoCircle();
-  }
-
-  get hexesGeom() {
-    return {
-      type: "FeatureCollection",
-      features: getRes0Indexes()
-        // .map( i => h3ToChildren( i, level))
-        .flat()
-        .map( d => ({
-          type: "Feature",
-          properties: { id: d, pentagon: h3IsPentagon(d) },
-          geometry: {
-            type: "Polygon",
-            coordinates: [ h3ToGeoBoundary(d, true).reverse() ]
-          }
-        }))
-    };
-  }
-
-  get projFn() {
-    const proj = this._projectionDef.ctorFn();
-    return proj.fitSize( this.viewBoxsize, this.outlineGeom)
-               .rotate( this.centroid[ 1], this.centroid[ 0]);
-  }
-
-  get pathFn() {
-    return d3.geoPath( this.projFn);
-  }
-
-  get _SVGElement() {
+  _SVGElement() {
     return this.renderRoot?.querySelector('svg#map') ?? null;
+  }
+
+  _hasMeasuredSVGSize() {
+    return this._svgClientRect !== null;
+  }
+
+  _hasLoadedWorldGeom() {
+    return this._worldGeom !== null;
+  }
+
+  _isLoading() {
+    return !( this._hasMeasuredSVGSize()
+           && this._hasLoadedWorldGeom());
   }
 
   _measureSVGElement() {
     return requestAnimationFrame(() => {
-      this._svgClientRect = this._SVGElement.getBoundingClientRect();
+      this._svgClientRect = this._SVGElement().getBoundingClientRect();
     });
   }
 
@@ -413,30 +252,19 @@ export class H3Worldmap extends LitElement {
   }
 
   firstUpdated() {
-    // TODO: we should not ignore the promise returned
+    // TODO: we should not ignore the promise returned (see #19)
     // TODO: world geometry should be reloaded when
-    // worldGeometrySrc|Coll properties change
-    this.fetchLandData();
+    // worldGeometrySrc|Coll properties change (see #19)
+    this._fetchWorldGeometry();
 
     if (this._svgClientRect === null) {
       this._measureSVGElement();
     }
   }
 
-  geometries() {
-    return {
-      outline: this.outlineGeom,
-      graticule: null,
-      hexes: this.hexesGeom,
-      world: this._worldGeom,
-      bsphere: this.bsphereGeom,
-      areas: this.areasGeom
-    }
-  }
-
   render() {
     return [
-      this.isLoading ? spinnerView() : mapView(this.viewBoxsize, this.pathFn, this.geometries()),
+      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
