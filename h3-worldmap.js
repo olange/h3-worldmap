@@ -344,24 +344,8 @@ export class H3Worldmap extends LitElement {
            || this._worldGeom === null;
   }
 
-  get projFn() {
-    const proj = this._projectionDef.ctorFn(),
-          viewBoxSize = this.viewBoxsize,
-          outlineGeom = H3Worldmap.outlineGeom;
-    return proj.fitSize( viewBoxSize, outlineGeom)
-               .rotate( this.centroid[ 1], this.centroid[ 0]);
-  }
-
-  get pathFn() {
-    return d3.geoPath( this.projFn);
-  }
-
-  static get outlineGeom() {
+  get outlineGeom() {
     return { type: "Sphere" };
-  }
-
-  get _SVGElement() {
-    return this.renderRoot?.querySelector('svg#map') ?? null;
   }
 
   get areasGeom() {
@@ -414,6 +398,20 @@ export class H3Worldmap extends LitElement {
     };
   }
 
+  get projFn() {
+    const proj = this._projectionDef.ctorFn();
+    return proj.fitSize( this.viewBoxsize, this.outlineGeom)
+               .rotate( this.centroid[ 1], this.centroid[ 0]);
+  }
+
+  get pathFn() {
+    return d3.geoPath( this.projFn);
+  }
+
+  get _SVGElement() {
+    return this.renderRoot?.querySelector('svg#map') ?? null;
+  }
+
   _measureSVGElement() {
     return requestAnimationFrame(() => {
       const clientRect = this._SVGElement.getBoundingClientRect();
@@ -441,17 +439,20 @@ export class H3Worldmap extends LitElement {
     }
   }
 
+  geometries() {
+    return {
+      outline: this.outlineGeom,
+      graticule: null,
+      hexes: this.hexesGeom,
+      world: this._worldGeom,
+      bsphere: this.bsphereGeom,
+      areas: this.areasGeom
+    }
+  }
+
   render() {
-    const geometries = {
-        outline: H3Worldmap.outlineGeom,
-        graticule: null,
-        hexes: this.hexesGeom,
-        world: this._worldGeom,
-        bsphere: this.bsphereGeom,
-        areas: this.areasGeom
-      };
     return [
-      mapViewOrSpinner(this.isLoading, this.viewBoxsize, this.pathFn, geometries),
+      mapViewOrSpinner(this.isLoading, this.viewBoxsize, this.pathFn, this.geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
