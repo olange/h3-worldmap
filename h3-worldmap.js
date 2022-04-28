@@ -105,14 +105,14 @@ function projDefView(projDef) {
     projection (<code>${projDef?.id}</code>)`;
 }
 
-function spinnerViewFrag() {
+function spinnerView() {
   // Important: id="map" must match the id used in `_SVGElement()`,
   return svg`<svg id="map" viewBox="0 0 50 50" class="spinner">
     <circle class="path" cx="25" cy="25" r="20" />
   </svg>`;
 }
 
-function mapViewFrag(viewBoxSize, pathFn, geometries) {
+function mapView(viewBoxSize, pathFn, geometries) {
   // Important: id="map" must match the id used in `_SVGElement()`,
   const [ width, height ] = viewBoxSize;
   return svg`<svg id="map" viewBox="0 0 ${width} ${height}">
@@ -436,7 +436,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this.isLoading ? spinnerViewFrag() : mapViewFrag(this.viewBoxsize, this.pathFn, this.geometries()),
+      this.isLoading ? spinnerView() : mapView(this.viewBoxsize, this.pathFn, this.geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
