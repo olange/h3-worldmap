@@ -244,7 +244,13 @@ export class H3Worldmap extends LitElement {
 
   willUpdate(changedProperties) {
     if (changedProperties.has('projection')) {
-      this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
+      /* Add `id` to the this._projectionDef property.
+         Note that `id` is used only in the infoBox to identify the projection.
+         If the infoBox is removed or simplifieed, `id` becomes useless,
+         and the line below can be simplified to: 
+          this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
+      */
+      this._projectionDef = {id: this._projection, ...AVAILABLE_PROJECTIONS.get( this._projection)};
     }
     if (changedProperties.has('areas')) {
       this._uniqueAreas = removeDuplicates(this._areas);
