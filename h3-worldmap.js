@@ -143,7 +143,7 @@ export class H3Worldmap extends LitElement {
     this._projectionDef = null; // computed from `this._projection` (see `willUpdate()`)
   }
 
-  async fetchLandData() {
+  async _fetchWorldGeometry() {
     return fetch(this.worldGeometrySrc)
       .then(response => {
         if (!response.ok) {
@@ -291,10 +291,10 @@ export class H3Worldmap extends LitElement {
   }
 
   firstUpdated() {
-    // TODO: we should not ignore the promise returned
+    // TODO: we should not ignore the promise returned (see #19)
     // TODO: world geometry should be reloaded when
-    // worldGeometrySrc|Coll properties change
-    this.fetchLandData();
+    // worldGeometrySrc|Coll properties change (see #19)
+    this._fetchWorldGeometry();
 
     if (this._svgClientRect === null) {
       this._measureSVGElement();
