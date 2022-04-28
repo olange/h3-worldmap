@@ -187,10 +187,10 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
-  get viewBoxsize() {
+  _viewBoxSize() {
     // Returns width and height of the SVG viewbox space, which is used to
     // configure the D3-geo projection to produce coordinates in this space
-    return (this._svgClientRect === null)? null
+    return (this._svgClientRect === null) ? null
       : [ 1000 * this._svgClientRect.width / this._svgClientRect.height, 1000 ];
   }
 
@@ -250,12 +250,23 @@ export class H3Worldmap extends LitElement {
 
   get projFn() {
     const proj = this._projectionDef.ctorFn();
-    return proj.fitSize( this.viewBoxsize, this.outlineGeom)
+    return proj.fitSize( this._viewBoxSize(), this.outlineGeom)
                .rotate( this.centroid[ 1], this.centroid[ 0]);
   }
 
   get pathFn() {
     return d3.geoPath( this.projFn);
+  }
+
+  get geometries() {
+    return {
+      outline: this.outlineGeom,
+      graticule: null,
+      hexes: this.hexesGeom,
+      world: this._worldGeom,
+      bsphere: this.bsphereGeom,
+      areas: this.areasGeom
+    }
   }
 
   get _SVGElement() {
@@ -301,20 +312,9 @@ export class H3Worldmap extends LitElement {
     }
   }
 
-  geometries() {
-    return {
-      outline: this.outlineGeom,
-      graticule: null,
-      hexes: this.hexesGeom,
-      world: this._worldGeom,
-      bsphere: this.bsphereGeom,
-      areas: this.areasGeom
-    }
-  }
-
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this.viewBoxsize, this.pathFn, this.geometries()),
+      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn, this.geometries),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
