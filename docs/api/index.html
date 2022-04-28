@@ -92,7 +92,7 @@ this attribute should take one of either collection names.</td><td>string</td><t
         </tr>
       
         <tr>
-          <td>_aspectRatio</td><td>Computed aspect ratio (width / height) of the client
+          <td>_svgClientRect</td><td>Computed aspect ratio (width / height) of the client
 rect of the map SVG Element.
 
 Defined after first update and paint, thru a complicated
@@ -106,7 +106,7 @@ execution flow:
    SVG element, compute its aspect ratio and set this state
    property accordingly;
 3. which will finally trigger a re-render of the SVG element
-   by Lit, with the correct aspect ratio being available.</td><td>number</td><td></td>
+   by Lit, with the correct aspect ratio being available.</td><td>object</td><td></td>
         </tr>
       
     </table>
@@ -129,7 +129,7 @@ For instance:
         <tr>
           <td>projection</td><td>projection</td><td>Geodesic projection identifier (a string matching one of
 the selected D3-geo projections that we support — see
-the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td>"orthographic"</td>
+the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td></td>
         </tr>
       
         <tr>
@@ -137,19 +137,11 @@ the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td
         </tr>
       
         <tr>
-          <td>projFn</td><td></td><td></td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>pathFn</td><td></td><td></td><td></td><td></td>
+          <td>isLoading</td><td></td><td></td><td></td><td></td>
         </tr>
       
         <tr>
           <td>outlineGeom</td><td></td><td></td><td></td><td></td>
-        </tr>
-      
-        <tr>
-          <td>_SVGElement</td><td></td><td></td><td></td><td></td>
         </tr>
       
         <tr>
@@ -173,9 +165,21 @@ the AVAILABLE_PROJECTIONS map definition in source code).</td><td>string</td><td
         </tr>
       
         <tr>
+          <td>projFn</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>pathFn</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>_SVGElement</td><td></td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
           <td>worldGeometrySrc</td><td>world-geometry-src</td><td>URL of a TopoJSON file describing the geometry of the world
 we'd like to display on the map. It is typically one of the
-World Atlases available from https://github.com/topojson/world-atlas</td><td>url</td><td>"https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json"</td>
+World Atlases available from https://github.com/topojson/world-atlas</td><td>url</td><td></td>
         </tr>
       
         <tr>
@@ -185,11 +189,11 @@ geometry specified by the `worldGeometrySrc` property.
 
 For instance, the `countries-50m.json` TopoJSON world atlas [see below]
 contains two geometry collections, named `countries` and `land`;
-this attribute should take one of either collection names.</td><td>string</td><td>"land"</td>
+this attribute should take one of either collection names.</td><td>string</td><td></td>
         </tr>
       
         <tr>
-          <td>_aspectRatio</td><td>_aspectRatio</td><td>Computed aspect ratio (width / height) of the client
+          <td>_svgClientRect</td><td>_svgClientRect</td><td>Computed aspect ratio (width / height) of the client
 rect of the map SVG Element.
 
 Defined after first update and paint, thru a complicated
@@ -203,7 +207,12 @@ execution flow:
    SVG element, compute its aspect ratio and set this state
    property accordingly;
 3. which will finally trigger a re-render of the SVG element
-   by Lit, with the correct aspect ratio being available.</td><td>number</td><td>null</td>
+   by Lit, with the correct aspect ratio being available.</td><td>object</td><td>null</td>
+        </tr>
+      
+        <tr>
+          <td>_worldGeom</td><td>_worldGeom</td><td>World Atlas TopoJSON geometry, as loaded from the
+`world-geometry-src` and `world-geometry-coll` attributes.</td><td>object</td><td>undefined</td>
         </tr>
       
         <tr>
@@ -212,11 +221,6 @@ execution flow:
       
         <tr>
           <td>_projectionDef</td><td></td><td></td><td>null</td><td>null</td>
-        </tr>
-      
-        <tr>
-          <td>_worldGeom</td><td>_worldGeom</td><td>World Atlas TopoJSON geometry, as loaded from the
-`world-geometry-src` and `world-geometry-coll` attributes.</td><td>object</td><td>undefined</td>
         </tr>
       
     </table>
@@ -230,6 +234,10 @@ execution flow:
       
         <tr>
           <td>fetchLandData</td><td></td><td></td><td></td>
+        </tr>
+      
+        <tr>
+          <td>geometries</td><td></td><td></td><td></td>
         </tr>
       
     </table>
