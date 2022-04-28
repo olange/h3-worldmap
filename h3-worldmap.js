@@ -248,15 +248,15 @@ export class H3Worldmap extends LitElement {
     };
   }
 
-  get projFn() {
+  projFn() {
     const proj = this._projectionDef.ctorFn(),
       centroid = this.centroid();
     return proj.fitSize( this._viewBoxSize(), this.outlineGeom())
                .rotate( centroid[ 1], centroid[ 0]);
   }
 
-  get pathFn() {
-    return d3.geoPath( this.projFn);
+  pathFn() {
+    return d3.geoPath( this.projFn());
   }
 
   _geometries() {
@@ -315,7 +315,7 @@ export class H3Worldmap extends LitElement {
 
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn, this._geometries()),
+      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this.pathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
