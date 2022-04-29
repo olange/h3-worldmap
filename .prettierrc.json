@@ -3,6 +3,5 @@
   "tabWidth": 2,
   "singleQuote": true,
   "bracketSpacing": false,
-  "arrowParens": "always",
-  "requirePragma": true
+  "arrowParens": "always"
 }
