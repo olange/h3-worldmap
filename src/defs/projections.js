@@ -12,11 +12,11 @@ import * as d3 from 'd3';
  * @default
  */
  export const AVAILABLE_PROJECTIONS = new Map([
-  [ "conicEqualArea", { id: "conicEqualArea", name: "Conic equal-area", ctorFn: d3.geoConicEqualArea } ],
-  [ "orthographic",   { id: "orthographic", name: "Orthographic", ctorFn: d3.geoOrthographic } ],
-  [ "naturalEarth",   { id: "naturalEarth", name: "Natural Earth", ctorFn: d3.geoNaturalEarth1 } ],
-  [ "stereographic",  { id: "stereographic", name: "Stereographic", ctorFn: d3.geoStereographic } ],
-  [ "gnomonic",       { id: "gnomonic", name: "Gnomonic", ctorFn: d3.geoGnomonic } ],
-  [ "mercator",       { id: "mercator", name: "Mercator", ctorFn: d3.geoMercator } ],
+  [ "conicEqualArea", { name: "Conic equal-area", ctorFn: d3.geoConicEqualArea } ],
+  [ "orthographic",   { name: "Orthographic", ctorFn: d3.geoOrthographic } ],
+  [ "naturalEarth",   { name: "Natural Earth", ctorFn: d3.geoNaturalEarth1 } ],
+  [ "stereographic",  { name: "Stereographic", ctorFn: d3.geoStereographic } ],
+  [ "gnomonic",       { name: "Gnomonic", ctorFn: d3.geoGnomonic } ],
+  [ "mercator",       { name: "Mercator", ctorFn: d3.geoMercator } ],
   // TODO: complete list from https://observablehq.com/@d3/projection-comparison
 ]);
