@@ -7,6 +7,7 @@
     <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="../node_modules/lit/polyfill-support.js"></script>
     <script type="module" src="../h3-worldmap.js"></script>
+    <script type="module" src="../src/demo/h3-worldmap-demo.js"></script>
     <style>
       body { font-family: 'Georgia'; font-size: 1rem; }
       h3-worldmap {
@@ -17,6 +18,10 @@
     </style>
   </head>
   <body>
+    <h3-worldmap-demo>  </h3-worldmap-demo>
+    <p>This is not child content</p>
+
+    <!-- TODO REMOVE THIS -->
     <h3-worldmap
       projection="naturalEarth"
       areas='[
