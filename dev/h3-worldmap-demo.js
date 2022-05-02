@@ -7,8 +7,8 @@
 
 import {LitElement, html, css} from 'lit';
 import {H3Worldmap} from '../../h3-worldmap';
-import {H3WorldmapProjectionSelect} from './h3-worldmap-projection-select';
-import {AVAILABLE_PROJECTIONS} from '../defs/projections.js';
+import {H3WorldmapProjectionSelect} from '../h3-worldmap-projection-select';
+import {AVAILABLE_PROJECTIONS} from '../src/defs/projections.js';
 
 /**
  * import AVAILABLE_PROJECTIONS and convert it to an object like this:
