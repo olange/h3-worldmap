@@ -8,7 +8,6 @@
 import {LitElement, html, css} from 'lit';
 import {H3Worldmap} from '../../h3-worldmap';
 import {H3WorldmapProjectionSelect} from '../h3-worldmap-projection-select';
-import {AVAILABLE_PROJECTIONS} from '../src/defs/projections.js';
 import {PROPS_DEFAULTS} from '../src/defs/defaults.js';
 /**
  * The root class of the demo application.
