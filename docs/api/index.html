@@ -38,7 +38,7 @@
 About the update/layout/paint flow:
 
  1. As long as we don't know the size of the SVG element,
-    we can't draw the map, because we need to know its
+    we can't draw the map, because we need to know its
     aspect ratio, to set the view box system and configure
     the D3-geo projection to use the whole available space,
     even when the content box is not squarish.
@@ -119,6 +119,10 @@ execution flow:
       </tr>
       
         <tr>
+          <td>#firstLayoutController</td><td></td><td></td><td></td><td>new FirstLayoutController(this)</td>
+        </tr>
+      
+        <tr>
           <td>areas</td><td>areas</td><td>An array of H3-indexes, in JSON-stringified form.
 
 For instance:
@@ -182,6 +186,18 @@ execution flow:
     </table>
   
         
+    <h3>Methods</h3>
+    <table>
+      <tr>
+        <th>Name</th><th>Parameters</th><th>Description</th><th>Return</th>
+      </tr>
+      
+        <tr>
+          <td>firstLayout</td><td></td><td></td><td></td>
+        </tr>
+      
+    </table>
+  
         
     <h3>Events</h3>
     <table>
@@ -203,7 +219,7 @@ execution flow:
       </tr>
       
         <tr>
-          <td>(default)</td><td>This element has a slot</td>
+          <td>(default)</td><td>This element has a slot in the «info box» (which will eventually be removed)</td>
         </tr>
       
     </table>
@@ -216,7 +232,7 @@ execution flow:
       </tr>
       
         <tr>
-          <td>button</td><td>The button</td>
+          <td>(none)</td><td>No CSS parts available</td>
         </tr>
       
     </table>
