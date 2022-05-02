@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { LitElement, html, svg, css } from 'lit';
-
+import { LitElement } from 'lit';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
+
+import { FirstPaintController } from './lib/first-paint-controller.js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -31,7 +32,7 @@ function removeDuplicates( arr) {
  * About the update/layout/paint flow:
  *
  *  1. As long as we don't know the size of the SVG element,
- *     we can't draw the map, because we need to know its
+ *     we can't draw the map, because we need to know its
  *     aspect ratio, to set the view box system and configure
  *     the D3-geo projection to use the whole available space,
  *     even when the content box is not squarish.
@@ -43,10 +44,17 @@ function removeDuplicates( arr) {
  *     with a repaint, hopefully without a re-layout.
  *
  * @fires (nothing) - Indicates (nothing)
- * @slot - This element has a slot
- * @csspart button - The button
+ * @slot - This element has a slot in the «info box»
+ *     (which will eventually be removed)
+ * @csspart (none) - No CSS parts available
  */
 export class H3Worldmap extends LitElement {
+
+  // Adds a `firstPaint()` lifecycle method, called once after the
+  // shadow DOM was built and a browser layout cycle completed
+  /* eslint-disable-next-line no-unused-vars */
+  #firstPaintController = new FirstPaintController(this);
+
   static get styles() {
     return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
   }
@@ -92,7 +100,7 @@ export class H3Worldmap extends LitElement {
        * this attribute should take one of either collection names.
        *
        * @type {string}
-       * @see https://github.com/topojson/world-atlas#countries-50m.json
+       * @see https://github.com/topojson/world-atlas#countries-50m.json
        */
       worldGeometryColl: { type: String, attribute: "world-geometry-coll" },
 
@@ -139,7 +147,7 @@ export class H3Worldmap extends LitElement {
     this._svgClientRect = null; // computed after first paint
     this._worldGeom = undefined; // defined once the TOPOJson world geometry has loaded
 
-    // Internal private properties (derived, not observed)
+    // Internal private properties (computed, not observed)
     this._uniqueAreas = null;   // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null; // computed from `this._projection` (see `willUpdate()`)
   }
@@ -237,9 +245,16 @@ export class H3Worldmap extends LitElement {
   }
 
   _measureSVGElement() {
-    return requestAnimationFrame(() => {
-      this._svgClientRect = this._SVGElement().getBoundingClientRect();
-    });
+    // Setting `_svgClientRect` state property will trigger a new
+    // update/render cycle, which will display the world map and
+    // replace the spinner
+    this._svgClientRect = this._SVGElement().getBoundingClientRect();
+  }
+
+  firstPaint() {
+    // At this time, the browser completed its layout and
+    // the size of our SVG canvas can be precisely measured
+    this._measureSVGElement();
   }
 
   willUpdate(changedProperties) {
@@ -247,7 +262,7 @@ export class H3Worldmap extends LitElement {
       /* Add `id` to the this._projectionDef property.
          Note that `id` is used only in the infoBox to identify the projection.
          If the infoBox is removed or simplifieed, `id` becomes useless,
-         and the line below can be simplified to: 
+         and the line below can be simplified to:
           this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
       */
       this._projectionDef = {id: this._projection, ...AVAILABLE_PROJECTIONS.get( this._projection)};
@@ -262,10 +277,6 @@ export class H3Worldmap extends LitElement {
     // TODO: world geometry should be reloaded when
     // worldGeometrySrc|Coll properties change (see #19)
     this._fetchWorldGeometry();
-
-    if (this._svgClientRect === null) {
-      this._measureSVGElement();
-    }
   }
 
   render() {
