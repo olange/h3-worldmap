@@ -7,35 +7,31 @@
 
 import {LitElement, html, css} from 'lit';
 
-// 1 support for event dispatching
+import {AVAILABLE_PROJECTIONS} from './src/defs/projections.js';
 
 /**
- * Returns a custom event ready for dispatch.
- * @param {*} eventid
- * @param {*} value
- * @returns {Event}
+ * convert AVAILABLE_PROJECTIONS to an object like this:
+ *  {
+ *    conicEqualArea: 'Conic Equal-Area',
+ *    orthographic: 'Orthographic',
+ *    naturalEarth: 'Natural Earth',
+ *    stereographic: 'Stereographic',
+ *    gnomonic: 'Gnomonic',
+ *    mercator: 'Mercator',
+ *  }
  */
-const customEvent = (eventid, value) => {
-  const event = new CustomEvent(eventid, {
-    detail: value,
-    bubbles: true,
-    composed: true,
-  });
-  return event;
-};
-
-// 2 the compenent class
+const projectionOptions = Object.fromEntries(
+  [...AVAILABLE_PROJECTIONS.entries()].map(([projId, projProps]) => {
+    return [projId, projProps.name];
+  })
+);
 
 /**
- * A dropdown menu component
- *   Displays a dropdown list of options
- *   On user selection, dispatches a custom event with the selected value
+ * Dropdown menu selector for the projection.
  * Inputs:
- * - eventid: string, the event id to dispatch when the menu is clicked
- * - label: string, the label to display in the menu
- * - options: object, e.g { t: 'Triangle', s: 'Square', p: 'Pentagon', c: 'Circle' }
+ *   - selectedProjection: the current projection
  * Outputs:
- * - eventid, selected-option
+ *   - update-selected (custom event): dispatched when the user selects a new projection
  */
 export class H3WorldmapProjectionSelect extends LitElement {
   static styles = css`
@@ -56,25 +52,18 @@ export class H3WorldmapProjectionSelect extends LitElement {
     }
   `;
 
-  static properties = {
-    eventid: {type: String},
-    label: {type: String},
-    options: {type: Object},
-    selected: {type: String},
-  };
+  static get properties() {
+    return {
+      label: {type: String},
+      options: {type: Object},
+      selected: {type: String},
+    };
+  }
 
   constructor() {
     super();
-    this.eventid = 'dropdown-menu-event';
-    this.label = 'Choose a branch:';
-    this.options = {
-      a: 'Art',
-      b: 'Biology',
-      c: 'Chemistry',
-      d: 'Drama',
-      e: 'English',
-    };
-
+    this.label = 'Projection:';
+    this.options = projectionOptions;
     this.selected = undefined;
   }
 
@@ -96,17 +85,17 @@ export class H3WorldmapProjectionSelect extends LitElement {
     element.value = value;
   }
 
-  updateSelected(e) {
-    this.selected = e.target.value;
-    const event = customEvent(this.eventid, this.selected);
-    this.dispatchEvent(event);
+  _updateSelected(e) {
+    this.dispatchEvent(
+      new CustomEvent('update-selected', {detail: {value: e.target.value}})
+    );
   }
 
   render() {
     return html`
       <div class="wrap">
         <label> ${this.label} </label>
-        <select class="select" id="id-select" @change="${this.updateSelected}">
+        <select class="select" id="id-select" @change="${this._updateSelected}">
           ${this.optionsView(this.options)}
         </select>
       </div>

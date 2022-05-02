@@ -9,33 +9,7 @@ import {LitElement, html, css} from 'lit';
 import {H3Worldmap} from '../../h3-worldmap';
 import {H3WorldmapProjectionSelect} from '../h3-worldmap-projection-select';
 import {AVAILABLE_PROJECTIONS} from '../src/defs/projections.js';
-
-/**
- * import AVAILABLE_PROJECTIONS and convert it to an object like this:
- *  {
- *    conicEqualArea: 'Conic Equal-Area',
- *    orthographic: 'Orthographic',
- *    naturalEarth: 'Natural Earth',
- *    stereographic: 'Stereographic',
- *    gnomonic: 'Gnomonic',
- *    mercator: 'Mercator',
- *  }
- */
-const projectionOptions = Object.fromEntries(
-  [...AVAILABLE_PROJECTIONS.entries()].map((entry) => {
-    return [entry[0], entry[1].name];
-  })
-);
-
-/**
- * configure the dropdown menu
- */
-const dropdownMenuProjections = {
-  title: 'Projection:',
-  options: projectionOptions,
-  eventid: 'menu-event',
-};
-
+import {PROPS_DEFAULTS} from '../src/defs/defaults.js';
 /**
  * The root class of the demo application.
  */
@@ -57,8 +31,7 @@ export class H3WorldmapDemo extends LitElement {
 
   constructor() {
     super();
-    window.addEventListener(dropdownMenuProjections.eventid, this.listener);
-    this._selectedProjection = 'conicEqualArea';
+    this._selectedProjection = PROPS_DEFAULTS.PROJECTION;
   }
 
   static get properties() {
@@ -67,10 +40,8 @@ export class H3WorldmapDemo extends LitElement {
     };
   }
 
-  listener = (e) => {
-    if (e.type === dropdownMenuProjections.eventid) {
-      this._selectedProjection = e.detail;
-    }
+  selectedChanged = (e) => {
+    this._selectedProjection = e.detail.value;
   };
 
   areas = [
@@ -91,11 +62,9 @@ export class H3WorldmapDemo extends LitElement {
        >
        </h3-worldmap>
        </p>
-       <h3-worldmap-projection-select
-         .eventid="${dropdownMenuProjections.eventid}"
-         .label="${dropdownMenuProjections.title}"
-         .options=${dropdownMenuProjections.options}
+       <h3-worldmap-projection-select       
          .selected="${this._selectedProjection}"
+         @update-selected="${this.selectedChanged}"
        ></h3-worldmap-projection-select>
      </div>`;
   }
