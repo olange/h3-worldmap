@@ -3,3 +3,6 @@
 custom-elements.json
 # only generated for size check
 h3-worldmap.bundled.js
+
+# mac only
+.DS_Store
