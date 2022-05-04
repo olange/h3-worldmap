@@ -47,6 +47,7 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
+    "@lit-labs/task": "^1.1.2",
     "d3": "^7.4.0",
     "h3-js": "^3.7.0",
     "lit": "^2.1.0",

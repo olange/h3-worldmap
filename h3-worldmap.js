@@ -10,6 +10,7 @@ import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
 import { FirstLayoutController } from './lib/first-layout-controller.js';
+import { WorldGeometryController } from './src/controllers/worldGeometryController.js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -105,13 +106,6 @@ export class H3Worldmap extends LitElement {
       worldGeometryColl: { type: String, attribute: "world-geometry-coll" },
 
       /**
-       * World Atlas TopoJSON geometry, as loaded from the
-       * `world-geometry-src` and `world-geometry-coll` attributes.
-       * @type {object}
-       */
-      _worldGeom: { type: Object, state: true },
-
-      /**
        * Computed aspect ratio (width / height) of the client
        * rect of the map SVG Element.
        *
@@ -131,11 +125,15 @@ export class H3Worldmap extends LitElement {
        * @type {object}
        */
       _svgClientRect: { type: Object, state: true },
+
+      _worldGeom: { type: Object, state: true }
     };
   }
 
   constructor() {
     super();
+
+    this.worldGeometryController = new WorldGeometryController(this);
 
     // Public attributes/properties (observed by Lit)
     this.projection = PROPS_DEFAULTS.PROJECTION; // will trigger its property setter
@@ -145,29 +143,11 @@ export class H3Worldmap extends LitElement {
 
     // Internal state properties (observed by Lit)
     this._svgClientRect = null; // computed after first paint
-    this._worldGeom = undefined; // defined once the TOPOJson world geometry has loaded
+    this._worldGeom = null;
 
     // Internal private properties (computed, not observed)
     this._uniqueAreas = null;   // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null; // computed from `this._projection` (see `willUpdate()`)
-  }
-
-  async _fetchWorldGeometry() {
-    return fetch(this.worldGeometrySrc)
-      .then(response => {
-        if (!response.ok) {
-            throw new Error('File not found');
-        }
-        return response.json();
-      })
-      .then(world => {
-        this._worldGeom =
-          Object.hasOwn(world.objects, this.worldGeometryColl) // avoid code injection
-          ? topojson.feature(world, this.worldGeometryColl)
-          : null;
-      })
-      .catch(
-        error => { throw error; });
   }
 
   set areas( val) {
@@ -194,6 +174,26 @@ export class H3Worldmap extends LitElement {
     const oldId = this._projection;
     this._projection = val;
     this.requestUpdate("projection", oldId);
+  }
+
+  set worldGeometrySrc(value) {
+    const oldSrc = this.worldGeometryController.src;
+    this.worldGeometryController.src = value;
+    this.requestUpdate("worldGeometrySrc", oldSrc);
+  }
+
+  set worldGeometryColl(value) {
+    const oldColl = this.worldGeometryController.coll;
+    this.worldGeometryController.coll = value;
+    this.requestUpdate("worldGeometryColl", oldColl);
+  }
+
+  get worldGeometrySrc() {
+    return this.worldGeometryController.src;
+  }
+
+  get worldGeometryColl() {
+    return this.worldGeometryController.coll;
   }
 
   _viewBoxSize() {
@@ -272,16 +272,28 @@ export class H3Worldmap extends LitElement {
     }
   }
 
+  update(changedProperties) {
+    super.update(changedProperties);
+    this.worldGeometryController.render({
+      initial: () => console.log('task starting…'),
+      pending: () => console.log('task pending…'),
+      complete: (value) => this._worldGeom = value,
+      error: (e) => console.error('task in error', e)
+    });
+  }
+
   firstUpdated() {
     // TODO: we should not ignore the promise returned (see #19)
     // TODO: world geometry should be reloaded when
     // worldGeometrySrc|Coll properties change (see #19)
-    this._fetchWorldGeometry();
+    // this._fetchWorldGeometry();
   }
 
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
+      this._isLoading()
+        ? spinnerView()
+        : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
