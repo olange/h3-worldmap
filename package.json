@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "echo \"This is not a TypeScript project, so no need to build.\"",
+    "prepare": "npm run checkpackage",
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
     "lint:lit-analyzer": "lit-analyzer h3-worldmap.js",
@@ -31,6 +32,7 @@
     "test:watch": "wtr --watch",
     "test:prod": "MODE=prod wtr",
     "test:prod:watch": "MODE=prod wtr --watch",
+    "checkpackage": "npx package-check",
     "checksize": "rollup -c ; cat h3-worldmap.bundled.js | gzip -9 | wc -c ; rm h3-worldmap.bundled.js"
   },
   "keywords": [
@@ -62,6 +64,7 @@
     "@open-wc/testing-karma": "^4.0.9",
     "@rollup/plugin-node-resolve": "^13.0.4",
     "@rollup/plugin-replace": "^3.0.0",
+    "@skypack/package-check": "^0.2.2",
     "@types/mocha": "^9.0.0",
     "@web/dev-server": "^0.1.22",
     "@web/dev-server-legacy": "^0.1.4",
