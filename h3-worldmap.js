@@ -6,10 +6,12 @@
 
 import { LitElement } from 'lit';
 import * as d3 from 'd3';
+/* eslint-disable-next-line no-unused-vars */
 import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
 import { FirstLayoutController } from './lib/first-layout-controller.js';
+import { LandGeometryController } from './src/controllers/landGeometryController.js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -31,17 +33,25 @@ function removeDuplicates( arr) {
  *
  * About the update/layout/paint flow:
  *
- *  1. As long as we don't know the size of the SVG element,
- *     we can't draw the map, because we need to know its
- *     aspect ratio, to set the view box system and configure
- *     the D3-geo projection to use the whole available space,
- *     even when the content box is not squarish.
- *  2. So we start by rendering a loading spinner, to let the
- *     browser compute layout and assign the size of its container.
- *  3. Once the aspect ratio of the SVG container element is known,
- *     we can start to draw the map, inside the same SVG element.
- *  4. All of obviously this happens in two different frames,
- *     with a repaint, hopefully without a re-layout.
+ *  1. As long as we don't know the size of the SVG element, we can't
+ *     draw the map, because we need to configure the D3-geo projection
+ *     with the aspect ratio of the available space. We can only read
+ *     this size/aspect ratio, once the browser has computed the layout.
+ *  2. Therefore we start by rendering a loading spinner, to let the
+ *     browser compute layout and assign the size of the SVG element.
+ *  3. Once the aspect ratio of the SVG element is known, we can configure
+ *     the D3-geo projection, accordingly reset the view box system of
+ *     the SVG element (to the coordinates that the D3-geo projection
+ *     will produce) and start to draw the map on it.
+ *  4. All of obviously this happens on two successive frames (with
+ *     a repaint in between them), which is why we need to render a
+ *     loading spinner first.
+ *
+ *  I intend to later use a Resize Observer, which would enable us to
+ *  measure the size of the SVG element *after layout* and *before paint*,
+ *  which is the exact moment where we should configure the D3-geo projection.
+ *  I need to figure out if the Resize Observer gets notified of the
+ *  initial size of the SVG element, that is, even without any resizing.
  *
  * @fires (nothing) - Indicates (nothing)
  * @slot - This element has a slot in the «info box»
@@ -53,7 +63,12 @@ export class H3Worldmap extends LitElement {
   // Adds a `firstLayout()` lifecycle method, called once after the
   // shadow DOM was built and a browser layout cycle completed
   /* eslint-disable-next-line no-unused-vars */
-  #firstLayoutController = new FirstLayoutController(this);
+  firstLayoutController = new FirstLayoutController(this);
+
+  // Reactive controller responsible for fetching and parsing
+  // the world geometry from a TopoJSON file (which it will
+  // expose on its `geom` property)
+  landGeometryController = new LandGeometryController(this);
 
   static get styles() {
     return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
@@ -88,7 +103,7 @@ export class H3Worldmap extends LitElement {
        *
        * @type {url}
        */
-      worldGeometrySrc: { type: String, attribute: "world-geometry-src" },
+      landGeometrySrc: { type: String, attribute: "land-geometry-src" },
 
       /**
        * Name of the geometry collection, which we'd like to display.
@@ -102,14 +117,7 @@ export class H3Worldmap extends LitElement {
        * @type {string}
        * @see https://github.com/topojson/world-atlas#countries-50m.json
        */
-      worldGeometryColl: { type: String, attribute: "world-geometry-coll" },
-
-      /**
-       * World Atlas TopoJSON geometry, as loaded from the
-       * `world-geometry-src` and `world-geometry-coll` attributes.
-       * @type {object}
-       */
-      _worldGeom: { type: Object, state: true },
+      landGeometryColl: { type: String, attribute: "land-geometry-coll" },
 
       /**
        * Computed aspect ratio (width / height) of the client
@@ -130,7 +138,7 @@ export class H3Worldmap extends LitElement {
        *
        * @type {object}
        */
-      _svgClientRect: { type: Object, state: true },
+      _svgClientRect: { type: Object, state: true }
     };
   }
 
@@ -140,34 +148,15 @@ export class H3Worldmap extends LitElement {
     // Public attributes/properties (observed by Lit)
     this.projection = PROPS_DEFAULTS.PROJECTION; // will trigger its property setter
     this.areas = []; // will trigger its property setter
-    this.worldGeometrySrc = PROPS_DEFAULTS.WORLD_GEOMETRY_SRC;
-    this.worldGeometryColl = PROPS_DEFAULTS.WORLD_GEOMETRY_COLL;
+    this.landGeometrySrc = PROPS_DEFAULTS.LAND_GEOMETRY_SRC;
+    this.landGeometryColl = PROPS_DEFAULTS.LAND_GEOMETRY_COLL;
 
     // Internal state properties (observed by Lit)
     this._svgClientRect = null; // computed after first paint
-    this._worldGeom = undefined; // defined once the TOPOJson world geometry has loaded
 
     // Internal private properties (computed, not observed)
     this._uniqueAreas = null;   // computed from `this._areas` (see `willUpdate()`)
     this._projectionDef = null; // computed from `this._projection` (see `willUpdate()`)
-  }
-
-  async _fetchWorldGeometry() {
-    return fetch(this.worldGeometrySrc)
-      .then(response => {
-        if (!response.ok) {
-            throw new Error('File not found');
-        }
-        return response.json();
-      })
-      .then(world => {
-        this._worldGeom =
-          Object.hasOwn(world.objects, this.worldGeometryColl) // avoid code injection
-          ? topojson.feature(world, this.worldGeometryColl)
-          : null;
-      })
-      .catch(
-        error => { throw error; });
   }
 
   set areas( val) {
@@ -196,6 +185,28 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
+  set landGeometrySrc(value) {
+    // This will trigger the `src` setter in the WorldGeometryController,
+    // which will in turn request an update on the element, when both
+    // `src` and `coll` are defined
+    this.landGeometryController.src = value;
+  }
+
+  set landGeometryColl(value) {
+    // This will trigger the `coll` setter in the WorldGeometryController,
+    // which will in turn request an update on the element, when both
+    // `src` and `coll` are defined
+    this.landGeometryController.coll = value;
+  }
+
+  get landGeometrySrc() {
+    return this.landGeometryController.src;
+  }
+
+  get landGeometryColl() {
+    return this.landGeometryController.coll;
+  }
+
   _viewBoxSize() {
     // Returns width and height of the SVG viewbox space, which is used to
     // configure the D3-geo projection to produce coordinates in this space
@@ -209,7 +220,7 @@ export class H3Worldmap extends LitElement {
       outline: geometries.outlineGeom(),
       graticule: null,
       hexes: geometries.hexesGeom(),
-      world: this._worldGeom,
+      world: this.landGeometryController.geom,
       bsphere: geometries.bsphereGeom(areasGeom),
       areas: areasGeom
     }
@@ -235,13 +246,15 @@ export class H3Worldmap extends LitElement {
     return this._svgClientRect !== null;
   }
 
-  _hasLoadedWorldGeom() {
-    return this._worldGeom !== null;
+  _hasLoadedLandGeom() {
+    return this.landGeometryController.geom !== null;
   }
 
   _isLoading() {
+    // NOTE: We could actually already render the map, without waiting
+    // for the land geometry; it can be rendered later, when it is loaded.
     return !( this._hasMeasuredSVGSize()
-           && this._hasLoadedWorldGeom());
+           && this._hasLoadedLandGeom()); // this could be ignored
   }
 
   _measureSVGElement() {
@@ -272,16 +285,17 @@ export class H3Worldmap extends LitElement {
     }
   }
 
-  firstUpdated() {
-    // TODO: we should not ignore the promise returned (see #19)
-    // TODO: world geometry should be reloaded when
-    // worldGeometrySrc|Coll properties change (see #19)
-    this._fetchWorldGeometry();
-  }
-
   render() {
     return [
-      this._isLoading() ? spinnerView() : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
+      this._isLoading()
+        ? spinnerView(
+            this.landGeometryController.render({
+              initial: () => { console.log('task starting…'); return 'Starting…'; },
+              pending: () => { console.log('task pending…'); return 'Fetching land…'; },
+              complete: (value) => { console.log(`task completed with ${value} feature objects`); return `Ready.`; },
+              error: (e) => { console.error('task in error', e); return `Error ${e}`; }
+          }))
+        : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
   }
