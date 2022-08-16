@@ -1,6 +1,6 @@
 {
   "name": "@olange/h3-worldmap",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An H3 worldmap web component",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -17,8 +17,8 @@
     "docs/h3-worldmap.bundled.js",
     "custom-elements.json",
     "CHANGELOG.md",
-    "src/**.js",
-    "types/**.d.ts"
+    "src/**/*.js",
+    "types/**/*.d.ts"
   ],
   "private": false,
   "publishConfig": {
@@ -27,7 +27,7 @@
   "scripts": {
     "build": "npm run build:types",
     "build:types": "npx tsc --allowJs -d --emitDeclarationOnly --outDir ./types/ ./h3-worldmap.js",
-    "prepack": "npm run build && npm run docs && npm run checkpackage",
+    "prepack": "npm run build && npm run analyze && npm run docs:build && npm run checkpackage",
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
     "lint:lit-analyzer": "lit-analyzer h3-worldmap.js",
@@ -65,7 +65,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/olange/h3-worldmap/"
+    "url": "https://github.com/olange/h3-worldmap/",
+    "issues": "https://github.com/olange/h3-worldmap/issues/"
   },
   "dependencies": {
     "@lit-labs/task": "^1.1.2",
