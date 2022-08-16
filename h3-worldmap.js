@@ -6,6 +6,7 @@
 
 import { LitElement } from 'lit';
 import * as d3 from 'd3';
+/* eslint-disable-next-line no-unused-vars */
 import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
@@ -32,17 +33,25 @@ function removeDuplicates( arr) {
  *
  * About the update/layout/paint flow:
  *
- *  1. As long as we don't know the size of the SVG element,
- *     we can't draw the map, because we need to know its
- *     aspect ratio, to set the view box system and configure
- *     the D3-geo projection to use the whole available space,
- *     even when the content box is not squarish.
- *  2. So we start by rendering a loading spinner, to let the
- *     browser compute layout and assign the size of its container.
- *  3. Once the aspect ratio of the SVG container element is known,
- *     we can start to draw the map, inside the same SVG element.
- *  4. All of obviously this happens in two different frames,
- *     with a repaint, hopefully without a re-layout.
+ *  1. As long as we don't know the size of the SVG element, we can't
+ *     draw the map, because we need to configure the D3-geo projection
+ *     with the aspect ratio of the available space. We can only read
+ *     this size/aspect ratio, once the browser has computed the layout.
+ *  2. Therefore we start by rendering a loading spinner, to let the
+ *     browser compute layout and assign the size of the SVG element.
+ *  3. Once the aspect ratio of the SVG element is known, we can configure
+ *     the D3-geo projection, accordingly reset the view box system of
+ *     the SVG element (to the coordinates that the D3-geo projection
+ *     will produce) and start to draw the map on it.
+ *  4. All of obviously this happens on two successive frames (with
+ *     a repaint in between them), which is why we need to render a
+ *     loading spinner first.
+ *
+ *  I intend to later use a Resize Observer, which would enable us to
+ *  measure the size of the SVG element *after layout* and *before paint*,
+ *  which is the exact moment where we should configure the D3-geo projection.
+ *  I need to figure out if the Resize Observer gets notified of the
+ *  initial size of the SVG element, that is, even without any resizing.
  *
  * @fires (nothing) - Indicates (nothing)
  * @slot - This element has a slot in the «info box»
@@ -54,7 +63,12 @@ export class H3Worldmap extends LitElement {
   // Adds a `firstLayout()` lifecycle method, called once after the
   // shadow DOM was built and a browser layout cycle completed
   /* eslint-disable-next-line no-unused-vars */
-  #firstLayoutController = new FirstLayoutController(this);
+  firstLayoutController = new FirstLayoutController(this);
+
+  // Reactive controller responsible for fetching and parsing
+  // the world geometry from a TopoJSON file (which it will
+  // expose on its `geom` property)
+  worldGeometryController = new WorldGeometryController(this);
 
   static get styles() {
     return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
@@ -124,16 +138,12 @@ export class H3Worldmap extends LitElement {
        *
        * @type {object}
        */
-      _svgClientRect: { type: Object, state: true },
-
-      _worldGeom: { type: Object, state: true }
+      _svgClientRect: { type: Object, state: true }
     };
   }
 
   constructor() {
     super();
-
-    this.worldGeometryController = new WorldGeometryController(this);
 
     // Public attributes/properties (observed by Lit)
     this.projection = PROPS_DEFAULTS.PROJECTION; // will trigger its property setter
@@ -143,7 +153,6 @@ export class H3Worldmap extends LitElement {
 
     // Internal state properties (observed by Lit)
     this._svgClientRect = null; // computed after first paint
-    this._worldGeom = null;
 
     // Internal private properties (computed, not observed)
     this._uniqueAreas = null;   // computed from `this._areas` (see `willUpdate()`)
@@ -177,15 +186,17 @@ export class H3Worldmap extends LitElement {
   }
 
   set worldGeometrySrc(value) {
-    const oldSrc = this.worldGeometryController.src;
+    // This will trigger the `src` setter in the WorldGeometryController,
+    // which will in turn request an update on the element, when both
+    // `src` and `coll` are defined
     this.worldGeometryController.src = value;
-    this.requestUpdate("worldGeometrySrc", oldSrc);
   }
 
   set worldGeometryColl(value) {
-    const oldColl = this.worldGeometryController.coll;
+    // This will trigger the `coll` setter in the WorldGeometryController,
+    // which will in turn request an update on the element, when both
+    // `src` and `coll` are defined
     this.worldGeometryController.coll = value;
-    this.requestUpdate("worldGeometryColl", oldColl);
   }
 
   get worldGeometrySrc() {
@@ -209,7 +220,7 @@ export class H3Worldmap extends LitElement {
       outline: geometries.outlineGeom(),
       graticule: null,
       hexes: geometries.hexesGeom(),
-      world: this._worldGeom,
+      world: this.worldGeometryController.geom,
       bsphere: geometries.bsphereGeom(areasGeom),
       areas: areasGeom
     }
@@ -272,27 +283,16 @@ export class H3Worldmap extends LitElement {
     }
   }
 
-  update(changedProperties) {
-    super.update(changedProperties);
-    this.worldGeometryController.render({
-      initial: () => console.log('task starting…'),
-      pending: () => console.log('task pending…'),
-      complete: (value) => this._worldGeom = value,
-      error: (e) => console.error('task in error', e)
-    });
-  }
-
-  firstUpdated() {
-    // TODO: we should not ignore the promise returned (see #19)
-    // TODO: world geometry should be reloaded when
-    // worldGeometrySrc|Coll properties change (see #19)
-    // this._fetchWorldGeometry();
-  }
-
   render() {
     return [
       this._isLoading()
-        ? spinnerView()
+        ? spinnerView(
+            this.worldGeometryController.render({
+              initial: () => { console.log('task starting…'); return 'Starting…'; },
+              pending: () => { console.log('task pending…'); return 'Fetching land…'; },
+              complete: (value) => { console.log(`task completed with ${value} feature objects`); return `Ready.`; },
+              error: (e) => { console.error('task in error', e); return `Error ${e}`; }
+          }))
         : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
       infoBoxView(this._uniqueAreas, this._projectionDef)
     ];
