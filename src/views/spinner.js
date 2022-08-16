@@ -1,14 +1,23 @@
 import { svg, css } from 'lit';
+import { when } from 'lit/directives/when.js';
 
-export function spinnerView() {
+export function spinnerView(statusMsg) {
   // Important: id="map" must match the id used in `_SVGElement()` getter
-  return svg`<svg id="map" viewBox="0 0 50 50" class="spinner">
-      <circle class="path" cx="25" cy="25" r="20" />
+  return svg`<svg id="map" viewBox="0 0 50 50">
+      <g class="spinner"><circle class="path" cx="25" cy="25" r="20" /></g>
+      ${when(statusMsg, () => svg`<text x="50%" y="50%" class="status">${statusMsg}</text>`)}
     </svg>
   `;
 }
 
 export const spinnerStyles = css`
+  .status {
+    font-size: 0.25rem;
+    fill: var(--primary-color);
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
   .spinner {
     animation: rotate 2s linear infinite;
   }
