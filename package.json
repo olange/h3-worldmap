@@ -1,17 +1,33 @@
 {
   "name": "@olange/h3-worldmap",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An H3 worldmap web component",
-  "main": "h3-worldmap.js",
-  "module": "h3-worldmap.js",
+  "license": "BSD-3-Clause",
   "type": "module",
+  "module": "h3-worldmap.js",
+  "main": "h3-worldmap.js",
+  "types": "./types/h3-worldmap.d.ts",
+  "exports": {
+    ".": {
+      "import": "./h3-worldmap.js"
+    }
+  },
+  "files": [
+    "h3-worldmap.js",
+    "docs/h3-worldmap.bundled.js",
+    "custom-elements.json",
+    "CHANGELOG.md",
+    "src/**.js",
+    "types/**.d.ts"
+  ],
   "private": false,
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "echo \"This is not a TypeScript project, so no need to build.\"",
-    "prepare": "npm run checkpackage",
+    "build": "npm run build:types",
+    "build:types": "npx tsc --allowJs -d --emitDeclarationOnly --outDir ./types/ ./h3-worldmap.js",
+    "prepack": "npm run build && npm run docs && npm run checkpackage",
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
     "lint:eslint": "eslint '**/*.js'",
     "lint:lit-analyzer": "lit-analyzer h3-worldmap.js",
@@ -47,7 +63,10 @@
   "contributors": [
     "Rudi Farkas (https://github.com/rudifa)"
   ],
-  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/olange/h3-worldmap/"
+  },
   "dependencies": {
     "@lit-labs/task": "^1.1.2",
     "d3": "^7.4.0",
@@ -82,7 +101,8 @@
     "rimraf": "^3.0.2",
     "rollup": "^2.70.2",
     "rollup-plugin-summary": "^1.2.3",
-    "rollup-plugin-terser": "^7.0.2"
+    "rollup-plugin-terser": "^7.0.2",
+    "typescript": "^4.7.4"
   },
   "customElements": "custom-elements.json"
 }

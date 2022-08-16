@@ -44,7 +44,7 @@ export class LandGeometryController {
 
   /**
    * Output of the controller: the world geometry.
-   * @type {topojson.FeatureCollection}
+   * @type {topojson.feature}
    */
   _geom;
 

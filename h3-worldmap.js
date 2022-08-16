@@ -6,8 +6,6 @@
 
 import { LitElement } from 'lit';
 import * as d3 from 'd3';
-/* eslint-disable-next-line no-unused-vars */
-import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
 import { FirstLayoutController } from './src/controllers/firstLayoutController.js';
