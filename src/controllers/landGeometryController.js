@@ -25,7 +25,7 @@ function delay(ms) {
  * The output of the controller is a collection of features,
  * which can be read from its `geom` property.
  */
-export class WorldGeometryController {
+export class LandGeometryController {
   _host;
   _fetchingTask;
 

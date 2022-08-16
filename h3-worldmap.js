@@ -11,7 +11,7 @@ import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
 import { FirstLayoutController } from './lib/first-layout-controller.js';
-import { WorldGeometryController } from './src/controllers/worldGeometryController.js';
+import { LandGeometryController } from './src/controllers/landGeometryController.js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -68,7 +68,7 @@ export class H3Worldmap extends LitElement {
   // Reactive controller responsible for fetching and parsing
   // the world geometry from a TopoJSON file (which it will
   // expose on its `geom` property)
-  worldGeometryController = new WorldGeometryController(this);
+  landGeometryController = new LandGeometryController(this);
 
   static get styles() {
     return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
@@ -103,7 +103,7 @@ export class H3Worldmap extends LitElement {
        *
        * @type {url}
        */
-      worldGeometrySrc: { type: String, attribute: "world-geometry-src" },
+      landGeometrySrc: { type: String, attribute: "land-geometry-src" },
 
       /**
        * Name of the geometry collection, which we'd like to display.
@@ -117,7 +117,7 @@ export class H3Worldmap extends LitElement {
        * @type {string}
        * @see https://github.com/topojson/world-atlas#countries-50m.json
        */
-      worldGeometryColl: { type: String, attribute: "world-geometry-coll" },
+      landGeometryColl: { type: String, attribute: "land-geometry-coll" },
 
       /**
        * Computed aspect ratio (width / height) of the client
@@ -148,8 +148,8 @@ export class H3Worldmap extends LitElement {
     // Public attributes/properties (observed by Lit)
     this.projection = PROPS_DEFAULTS.PROJECTION; // will trigger its property setter
     this.areas = []; // will trigger its property setter
-    this.worldGeometrySrc = PROPS_DEFAULTS.WORLD_GEOMETRY_SRC;
-    this.worldGeometryColl = PROPS_DEFAULTS.WORLD_GEOMETRY_COLL;
+    this.landGeometrySrc = PROPS_DEFAULTS.LAND_GEOMETRY_SRC;
+    this.landGeometryColl = PROPS_DEFAULTS.LAND_GEOMETRY_COLL;
 
     // Internal state properties (observed by Lit)
     this._svgClientRect = null; // computed after first paint
@@ -185,26 +185,26 @@ export class H3Worldmap extends LitElement {
     this.requestUpdate("projection", oldId);
   }
 
-  set worldGeometrySrc(value) {
+  set landGeometrySrc(value) {
     // This will trigger the `src` setter in the WorldGeometryController,
     // which will in turn request an update on the element, when both
     // `src` and `coll` are defined
-    this.worldGeometryController.src = value;
+    this.landGeometryController.src = value;
   }
 
-  set worldGeometryColl(value) {
+  set landGeometryColl(value) {
     // This will trigger the `coll` setter in the WorldGeometryController,
     // which will in turn request an update on the element, when both
     // `src` and `coll` are defined
-    this.worldGeometryController.coll = value;
+    this.landGeometryController.coll = value;
   }
 
-  get worldGeometrySrc() {
-    return this.worldGeometryController.src;
+  get landGeometrySrc() {
+    return this.landGeometryController.src;
   }
 
-  get worldGeometryColl() {
-    return this.worldGeometryController.coll;
+  get landGeometryColl() {
+    return this.landGeometryController.coll;
   }
 
   _viewBoxSize() {
@@ -220,7 +220,7 @@ export class H3Worldmap extends LitElement {
       outline: geometries.outlineGeom(),
       graticule: null,
       hexes: geometries.hexesGeom(),
-      world: this.worldGeometryController.geom,
+      world: this.landGeometryController.geom,
       bsphere: geometries.bsphereGeom(areasGeom),
       areas: areasGeom
     }
@@ -246,13 +246,15 @@ export class H3Worldmap extends LitElement {
     return this._svgClientRect !== null;
   }
 
-  _hasLoadedWorldGeom() {
-    return this._worldGeom !== null;
+  _hasLoadedLandGeom() {
+    return this.landGeometryController.geom !== null;
   }
 
   _isLoading() {
+    // NOTE: We could actually already render the map, without waiting
+    // for the land geometry; it can be rendered later, when it is loaded.
     return !( this._hasMeasuredSVGSize()
-           && this._hasLoadedWorldGeom());
+           && this._hasLoadedLandGeom()); // this could be ignored
   }
 
   _measureSVGElement() {
@@ -287,7 +289,7 @@ export class H3Worldmap extends LitElement {
     return [
       this._isLoading()
         ? spinnerView(
-            this.worldGeometryController.render({
+            this.landGeometryController.render({
               initial: () => { console.log('task starting…'); return 'Starting…'; },
               pending: () => { console.log('task pending…'); return 'Fetching land…'; },
               complete: (value) => { console.log(`task completed with ${value} feature objects`); return `Ready.`; },
