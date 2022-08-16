@@ -10,7 +10,7 @@ import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
 import { h3IsValid } from 'h3-js';
 
-import { FirstLayoutController } from './lib/first-layout-controller.js';
+import { FirstLayoutController } from './src/controllers/firstLayoutController.js';
 import { LandGeometryController } from './src/controllers/landGeometryController.js';
 
 import { hostStyles } from './src/views/host.js';
