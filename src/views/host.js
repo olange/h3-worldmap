@@ -2,9 +2,9 @@ import { css } from 'lit';
 
 export const hostStyles = css`
   :host {
-    height: 66vh;
     box-sizing: border-box;
     display: inline-block;
+    overflow: hidden;
     --primary-color: black;
     --secondary-color: #dddddd;
     --tertiary-color: #cccccc;
@@ -14,5 +14,8 @@ export const hostStyles = css`
     --background-color: white;
   }
 
-  svg, div { box-sizing: inherit }
+  svg, div {
+    box-sizing: inherit;
+    width: 100%;
+    height: 100%; }
 `;

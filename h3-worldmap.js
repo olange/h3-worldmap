@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { LitElement } from 'lit';
+import { LitElement, html } from 'lit';
 import * as d3 from 'd3';
 import { h3IsValid } from 'h3-js';
 
-import { FirstLayoutController } from './src/controllers/firstLayoutController.js';
 import { LandGeometryController } from './src/controllers/landGeometryController.js';
+import { ResizeController } from './src/controllers/resizeController.js';
 
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
@@ -58,15 +58,15 @@ function removeDuplicates( arr) {
  */
 export class H3Worldmap extends LitElement {
 
-  // Adds a `firstLayout()` lifecycle method, called once after the
-  // shadow DOM was built and a browser layout cycle completed
-  /* eslint-disable-next-line no-unused-vars */
-  firstLayoutController = new FirstLayoutController(this);
-
   // Reactive controller responsible for fetching and parsing
   // the world geometry from a TopoJSON file (which it will
   // expose on its `geom` property)
   landGeometryController = new LandGeometryController(this);
+
+  // Adds a `resize()` lifecycle method, called after the shadow DOM was built,
+  // every time the observed element changes its size – including upon first
+  // browser layout cylce, before first paint
+  resizeController = new ResizeController(this);
 
   static get styles() {
     return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
@@ -262,7 +262,8 @@ export class H3Worldmap extends LitElement {
     this._svgClientRect = this._SVGElement().getBoundingClientRect();
   }
 
-  firstLayout() {
+  resize(target, contentRect) {
+    console.log('resize()', target, contentRect);
     // At this time, the browser completed its layout and
     // the size of our SVG canvas can be precisely measured
     this._measureSVGElement();
@@ -284,8 +285,9 @@ export class H3Worldmap extends LitElement {
   }
 
   render() {
-    return [
-      this._isLoading()
+    return html`
+      <div ${this.resizeController.observe()}>
+      ${this._isLoading()
         ? spinnerView(
             this.landGeometryController.render({
               initial: () => { console.log('task starting…'); return 'Starting…'; },
@@ -293,9 +295,8 @@ export class H3Worldmap extends LitElement {
               complete: (value) => { console.log(`task completed with ${value} feature objects`); return `Ready.`; },
               error: (e) => { console.error('task in error', e); return `Error ${e}`; }
           }))
-        : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()),
-      infoBoxView(this._uniqueAreas, this._projectionDef)
-    ];
+        : mapView(this._viewBoxSize(), this._geoPathFn(), this._geometries()) }
+      </div>`;
   }
 }
 
