@@ -5,8 +5,8 @@ class ResizeDirective extends Directive {
   _observedElement;
 
   constructor(partInfo) {
-    console.log('ResizeDirective created', partInfo);
     super(partInfo);
+    console.log('ResizeDirective created', partInfo);
     if (partInfo.type !== PartType.ELEMENT) {
       throw new Error('The `resizeDirective` directive must be used on an Element or SVGElement');
     }
