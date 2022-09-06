@@ -14,7 +14,6 @@ import { ResizeController } from './src/controllers/resizeController.js';
 import { hostStyles } from './src/views/host.js';
 import { mapView, mapStyles } from './src/views/map.js';
 import { spinnerView, spinnerStyles } from './src/views/spinner.js';
-import { infoBoxView, infoStyles } from './src/views/infobox.js';
 
 import { AVAILABLE_PROJECTIONS } from './src/defs/projections.js';
 import { PROPS_DEFAULTS } from './src/defs/defaults.js';
@@ -51,10 +50,9 @@ function removeDuplicates( arr) {
  *  I need to figure out if the Resize Observer gets notified of the
  *  initial size of the SVG element, that is, even without any resizing.
  *
- * @fires (nothing) - Indicates (nothing)
- * @slot - This element has a slot in the «info box»
- *     (which will eventually be removed)
- * @csspart (none) - No CSS parts available
+ * @fires (nothing) – Nothing indicated.
+ * @slot (none) - No slot available.
+ * @csspart (none) - No CSS parts available.
  */
 export class H3Worldmap extends LitElement {
 
@@ -69,7 +67,7 @@ export class H3Worldmap extends LitElement {
   resizeController = new ResizeController(this);
 
   static get styles() {
-    return [ hostStyles, mapStyles, infoStyles, spinnerStyles ];
+    return [ hostStyles, mapStyles, spinnerStyles ];
   }
 
   static get properties() {
@@ -271,13 +269,7 @@ export class H3Worldmap extends LitElement {
 
   willUpdate(changedProperties) {
     if (changedProperties.has('projection')) {
-      /* Add `id` to the this._projectionDef property.
-         Note that `id` is used only in the infoBox to identify the projection.
-         If the infoBox is removed or simplifieed, `id` becomes useless,
-         and the line below can be simplified to:
-          this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
-      */
-      this._projectionDef = {id: this._projection, ...AVAILABLE_PROJECTIONS.get( this._projection)};
+      this._projectionDef = AVAILABLE_PROJECTIONS.get( this._projection);
     }
     if (changedProperties.has('areas')) {
       this._uniqueAreas = removeDuplicates(this._areas);
