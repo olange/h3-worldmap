@@ -6,7 +6,7 @@
 
 import { LitElement, html } from 'lit';
 import * as d3 from 'd3';
-import { h3IsValid } from 'h3-js';
+import { isValidCell } from 'h3-js';
 
 import { LandGeometryController } from './src/controllers/landGeometryController.js';
 import { ResizeController } from './src/controllers/resizeController.js';
@@ -160,7 +160,7 @@ export class H3Worldmap extends LitElement {
     if( !Array.isArray( val))
       throw new TypeError( `Property 'areas' must contain an array of H3-indexes; got ${val}`);
 
-    const anyInvalidArea = val.find( area => !h3IsValid( area));
+    const anyInvalidArea = val.find( area => !isValidCell( area));
     if( anyInvalidArea)
       throw new TypeError( `Property 'areas' must contain valid H3-indexes; '${anyInvalidArea}' is an invalid H3-index`)
 

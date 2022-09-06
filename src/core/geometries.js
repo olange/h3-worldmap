@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { h3IsPentagon, h3ToGeoBoundary, getRes0Indexes } from 'h3-js';
+import { isPentagon, cellToBoundary, cellToChildren, getRes0Cells } from 'h3-js';
 
 export function outlineGeom() {
   return { type: "Sphere" };
@@ -10,10 +10,10 @@ export function areasGeom(areas) {
     type: "FeatureCollection",
     features: areas.map((area) => ({
       type: "Feature",
-      properties: { id: area, pentagon: h3IsPentagon(area) },
+      properties: { id: area, pentagon: isPentagon(area) },
       geometry: {
         type: "Polygon",
-        coordinates: [h3ToGeoBoundary(area, true).reverse()]
+        coordinates: [ cellToBoundary(area, true).reverse() ]
       }
     }))
   };
@@ -40,15 +40,15 @@ export function bsphereGeom(areasGeom) {
 export function hexesGeom() {
   return {
     type: "FeatureCollection",
-    features: getRes0Indexes()
-      // .map( i => h3ToChildren( i, level))
-      .flat()
+    features: getRes0Cells()
+      //.map( i => cellToChildren( i, level))
+      //.flat()
       .map( d => ({
         type: "Feature",
-        properties: { id: d, pentagon: h3IsPentagon(d) },
+        properties: { id: d, pentagon: isPentagon(d) },
         geometry: {
           type: "Polygon",
-          coordinates: [ h3ToGeoBoundary(d, true).reverse() ]
+          coordinates: [ cellToBoundary(d, true).reverse() ]
         }
       }))
   };
